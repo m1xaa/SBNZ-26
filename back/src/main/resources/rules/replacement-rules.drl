@@ -1,0 +1,57 @@
+package rules;
+
+import com.cr.back.domain.CardRole;
+import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.PlayerFact;
+import com.cr.back.rules.facts.PlayerInsight;
+
+global java.util.Collection cards;
+
+rule "31 replacement - suggest alternatives for locked or low cards"
+salience 25
+when
+    $d : DeckCandidate()
+    eval(!$d.hasAppliedRule("31"))
+then
+    $d.markRule("31");
+    DeckRulesSupport.suggestAlternativesForLowCards($d, cards);
+    update($d);
+end
+
+rule "32 correction - insufficient weakness coverage warning"
+salience 25
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("32"))
+    eval($d.countRole(CardRole.AIR_SUPPORT_COUNTER) < 1)
+then
+    $d.markRule("32");
+    $d.getWarnings().add("Deck is valid, but still has limited dedicated answers to air support.");
+    update($d);
+end
+
+rule "33 tie-break - key card levels improve score"
+salience 20
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("33"))
+then
+    $d.markRule("33");
+    $d.addScore($d.keyLevelSum() / 4, "Higher-level key cards improve this candidate's ranking.");
+    update($d);
+end
+
+rule "34 replacement - respect explicitly disliked cards"
+salience 30
+when
+    $p : PlayerFact()
+    $d : DeckCandidate()
+    eval(!$d.hasAppliedRule("34"))
+    eval(!$p.dislikedCards().isEmpty())
+then
+    $d.markRule("34");
+    DeckRulesSupport.replaceDislikedCards($d, cards, $p);
+    update($d);
+end

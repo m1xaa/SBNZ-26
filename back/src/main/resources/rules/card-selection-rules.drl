@@ -1,0 +1,78 @@
+package rules;
+
+import com.cr.back.domain.CardRole;
+import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.PlayerInsight;
+
+rule "25 card choice - high-level win condition anchors cycle"
+salience 35
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("25"))
+    eval($d.countRole(CardRole.WIN_CONDITION) == 1)
+then
+    $d.markRule("25");
+    $d.addScore(18, "A high-level win condition anchors the selected archetype.");
+    update($d);
+end
+
+rule "26 card choice - defensive building selected"
+salience 35
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("26"))
+    eval($d.hasRole(CardRole.BUILDING))
+then
+    $d.markRule("26");
+    $d.addScore(8, "A defensive building is available and fits the deck structure.");
+    update($d);
+end
+
+rule "27 card choice - strong anti-air support selected"
+salience 35
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("27"))
+    eval($d.contains("Firecracker") || $d.contains("Musketeer") || $d.contains("Baby Dragon"))
+then
+    $d.markRule("27");
+    $d.addScore(12, "High-level anti-air support was prioritized because of the air weakness.");
+    update($d);
+end
+
+rule "28 card choice - compatible small spell selected"
+salience 35
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("28"))
+    eval($d.hasRole(CardRole.SMALL_SPELL))
+then
+    $d.markRule("28");
+    $d.addScore(8, "A small spell is included for cheap answers and cycle consistency.");
+    update($d);
+end
+
+rule "29 card choice - cheap reliable support selected"
+salience 35
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("29"))
+    eval($d.countRole(CardRole.CYCLE) >= 2)
+then
+    $d.markRule("29");
+    $d.addScore(7, "Cheap cycle cards fill support slots without raising average elixir.");
+    update($d);
+end
+
+rule "30 card choice - synergy with win condition"
+salience 35
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasAppliedRule("30"))
+    eval(($d.contains("Hog Rider") && $d.contains("Earthquake")) || ($d.contains("Golem") && $d.contains("Night Witch")))
+then
+    $d.markRule("30");
+    $d.addScore(12, "Selected support has strong synergy with the main win condition.");
+    update($d);
+end

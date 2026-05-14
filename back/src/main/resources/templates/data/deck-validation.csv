@@ -1,0 +1,8 @@
+ruleId,archetype,minAverageElixir,maxAverageElixir,requiredRole,warning
+cycle-elixir,CYCLE,2.3,3.4,CYCLE,Rejected because cycle decks must stay cheap and contain cycle cards.
+control-elixir,CONTROL,2.8,4.0,SINGLE_TARGET_DPS,Rejected because control decks need efficient defense and a stable elixir range.
+beatdown-elixir,BEATDOWN,3.6,5.0,TANK,Rejected because beatdown decks need a tank and heavier average elixir profile.
+bait-elixir,BAIT,2.8,3.8,SWARM,Rejected because bait decks need spell-bait swarm pressure.
+bridge-spam-elixir,BRIDGE_SPAM,3.0,4.1,PRESSURE,Rejected because bridge spam decks need direct pressure cards.
+siege-elixir,SIEGE,2.8,4.0,SIEGE,Rejected because siege decks need a siege win condition.
+air-counter-elixir,AIR_COUNTER,2.8,4.2,AIR_SUPPORT_COUNTER,Rejected because air-counter decks need dedicated air-support answers.

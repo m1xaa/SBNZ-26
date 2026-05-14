@@ -1,0 +1,32 @@
+template header
+ruleId
+archetype
+minAverageElixir
+maxAverageElixir
+requiredRole
+warning
+
+package generated.templates;
+
+import com.cr.back.domain.Archetype;
+import com.cr.back.domain.CardRole;
+import com.cr.back.rules.facts.DeckCandidate;
+
+template "archetype-validation"
+
+rule "template deck validation @{ruleId} - @{archetype}"
+salience 38
+when
+    $d : DeckCandidate(archetype == Archetype.@{archetype}, valid == true)
+    eval(!$d.hasAppliedRule("template-validation-@{ruleId}"))
+then
+    $d.markRule("template-validation-@{ruleId}");
+    if ($d.averageElixir() < @{minAverageElixir} || $d.averageElixir() > @{maxAverageElixir}) {
+        $d.reject("@{warning}");
+    } else if (!$d.hasRole(CardRole.@{requiredRole})) {
+        $d.reject("Rejected because @{archetype} requires @{requiredRole}.");
+    }
+    update($d);
+end
+
+end template

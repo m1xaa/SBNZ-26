@@ -1,0 +1,76 @@
+package rules;
+
+import com.cr.back.domain.Archetype;
+import com.cr.back.domain.CardRole;
+import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.PlayerInsight;
+
+global java.util.Collection cards;
+
+rule "12 form - cycle candidate"
+salience 60
+when
+    $s : ArchetypeScore(archetype == Archetype.CYCLE, score > 0)
+    not DeckCandidate(archetype == Archetype.CYCLE)
+    eval(DeckRulesSupport.hasHighLevelRole(cards, CardRole.WIN_CONDITION, 10))
+then
+    DeckCandidate deck = new DeckCandidate(Archetype.CYCLE);
+    DeckRulesSupport.buildDeck(deck, cards);
+    deck.addScore($s.getScore(), "Cycle candidate formed around fast pressure and low elixir.");
+    insert(deck);
+end
+
+rule "13 form - beatdown candidate"
+salience 60
+when
+    $s : ArchetypeScore(archetype == Archetype.BEATDOWN, score > 0)
+    not DeckCandidate(archetype == Archetype.BEATDOWN)
+    eval(DeckRulesSupport.hasHighLevelRole(cards, CardRole.TANK, 10))
+then
+    DeckCandidate deck = new DeckCandidate(Archetype.BEATDOWN);
+    DeckRulesSupport.buildDeck(deck, cards);
+    deck.addScore($s.getScore(), "Beatdown candidate formed around a tank and support push.");
+    insert(deck);
+end
+
+rule "14 form - bait candidate"
+salience 60
+when
+    $s : ArchetypeScore(archetype == Archetype.BAIT, score > 0)
+    not DeckCandidate(archetype == Archetype.BAIT)
+    eval(DeckRulesSupport.hasMultipleSpellBaitCards(cards))
+then
+    DeckCandidate deck = new DeckCandidate(Archetype.BAIT);
+    DeckRulesSupport.buildDeck(deck, cards);
+    deck.addScore($s.getScore(), "Bait candidate formed around cards that pressure the same opponent responses.");
+    insert(deck);
+end
+
+rule "15 form - air counter candidate"
+salience 60
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $s : ArchetypeScore(archetype == Archetype.AIR_COUNTER, score > 0)
+    not DeckCandidate(archetype == Archetype.AIR_COUNTER)
+    eval(DeckRulesSupport.hasHighLevelRole(cards, CardRole.ANTI_AIR, 10))
+then
+    DeckCandidate deck = new DeckCandidate(Archetype.AIR_COUNTER);
+    DeckRulesSupport.buildDeck(deck, cards);
+    deck.addScore($s.getScore(), "Air-counter candidate formed to cover repeated air-archetype losses.");
+    insert(deck);
+end
+
+rule "16 correction - air weakness adds anti-air"
+salience 55
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $d : DeckCandidate()
+    eval(!$d.hasAppliedRule("16"))
+then
+    $d.markRule("16");
+    DeckRulesSupport.addExtraAntiAir($d, cards);
+    $d.addScore(10, "Air weakness corrected with reinforced anti-air support.");
+    update($d);
+end

@@ -1,0 +1,72 @@
+package rules;
+
+import com.cr.back.domain.Archetype;
+import com.cr.back.domain.CardRole;
+import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.PlayerFact;
+import com.cr.back.rules.facts.PlayerInsight;
+
+global java.util.Collection cards;
+
+rule "07 archetype - cycle insight favors cycle and control"
+salience 80
+when
+    PlayerInsight(code == "CYCLE_STYLE")
+    $s : ArchetypeScore(archetype in (Archetype.CYCLE, Archetype.CONTROL))
+    eval(!$s.hasAppliedRule("07"))
+then
+    $s.markRule("07");
+    $s.addScore(30, "Cycle-style profile favors cycle/control archetypes.");
+    update($s);
+end
+
+rule "08 archetype - slower style with tank favors beatdown"
+salience 80
+when
+    PlayerInsight(code == "SLOW_STYLE")
+    $s : ArchetypeScore(archetype == Archetype.BEATDOWN)
+    eval(!$s.hasAppliedRule("08"))
+    eval(DeckRulesSupport.hasHighLevelRole(cards, CardRole.TANK, 10))
+then
+    $s.markRule("08");
+    $s.addScore(30, "Slower style and a high-level tank favor beatdown.");
+    update($s);
+end
+
+rule "09 archetype - aggressive bridge pressure favors bridge spam"
+salience 80
+when
+    $p : PlayerFact()
+    $s : ArchetypeScore(archetype == Archetype.BRIDGE_SPAM)
+    eval(!$s.hasAppliedRule("09"))
+    eval($p.aggressivePressure() && DeckRulesSupport.hasBridgePressure(cards))
+then
+    $s.markRule("09");
+    $s.addScore(25, "Aggressive pressure and bridge-pressure cards favor bridge spam.");
+    update($s);
+end
+
+rule "10 archetype - spell bait cards favor bait"
+salience 80
+when
+    $s : ArchetypeScore(archetype == Archetype.BAIT)
+    eval(!$s.hasAppliedRule("10"))
+    eval(DeckRulesSupport.hasMultipleSpellBaitCards(cards))
+then
+    $s.markRule("10");
+    $s.addScore(25, "Multiple swarm/spell-bait cards make bait viable.");
+    update($s);
+end
+
+rule "11 archetype - air weakness favors anti-air capable decks"
+salience 75
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $s : ArchetypeScore(archetype in (Archetype.AIR_COUNTER, Archetype.CYCLE, Archetype.CONTROL))
+    eval(!$s.hasAppliedRule("11"))
+then
+    $s.markRule("11");
+    $s.addScore(20, "Air weakness prioritizes archetypes that can carry at least two reliable anti-air cards.");
+    update($s);
+end

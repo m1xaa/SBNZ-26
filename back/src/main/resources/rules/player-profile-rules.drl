@@ -1,0 +1,53 @@
+package rules;
+
+import com.cr.back.domain.Archetype;
+import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.PlayerFact;
+import com.cr.back.rules.facts.PlayerInsight;
+
+global java.util.Collection matches;
+
+rule "01 profile - player fits cycle style"
+salience 100
+when
+    $p : PlayerFact()
+    not PlayerInsight(code == "CYCLE_STYLE")
+    eval($p.prefersFastGame() && !$p.likesHeavyDecks() && DeckRulesSupport.cheapDeckWins(matches) >= 2)
+then
+    insert(new PlayerInsight("CYCLE_STYLE", "Player prefers fast games and wins often with decks below 3.5 average elixir."));
+end
+
+rule "02 profile - player fits slower control or beatdown style"
+salience 100
+when
+    $p : PlayerFact()
+    not PlayerInsight(code == "SLOW_STYLE")
+    eval($p.patientGame() || $p.likesHeavyDecks())
+then
+    insert(new PlayerInsight("SLOW_STYLE", "Player profile points to slower, more patient play."));
+end
+
+rule "03 profile - recent cheap deck wins increase cycle priority"
+salience 95
+when
+    $s : ArchetypeScore(archetype == Archetype.CYCLE)
+    eval(!$s.hasAppliedRule("03"))
+    eval(DeckRulesSupport.cheapDeckWins(matches) >= 2)
+then
+    $s.markRule("03");
+    $s.addScore(25, "Recent wins came from cheap decks, so cycle gets higher priority.");
+    update($s);
+end
+
+rule "04 profile - recent heavy deck losses reduce beatdown priority"
+salience 95
+when
+    $s : ArchetypeScore(archetype == Archetype.BEATDOWN)
+    eval(!$s.hasAppliedRule("04"))
+    eval(DeckRulesSupport.heavyDeckLosses(matches) >= 2)
+then
+    $s.markRule("04");
+    $s.addScore(-20, "Recent losses with heavy decks reduce beatdown priority.");
+    update($s);
+end

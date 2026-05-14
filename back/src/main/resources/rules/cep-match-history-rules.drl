@@ -1,0 +1,25 @@
+package rules;
+
+import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.PlayerInsight;
+
+global java.util.Collection matches;
+global java.util.Collection events;
+
+rule "05 profile - air weakness from recent losses"
+salience 100
+when
+    not PlayerInsight(code == "AIR_WEAKNESS")
+    eval(DeckRulesSupport.lossesAgainstAir(matches) >= 6)
+then
+    insert(new PlayerInsight("AIR_WEAKNESS", "At least 6 recent losses were against air-heavy archetypes."));
+end
+
+rule "06 cep - repeated elixir overcommit"
+salience 100
+when
+    not PlayerInsight(code == "OVERCOMMIT")
+    eval(DeckRulesSupport.repeatedOvercommit(matches, events))
+then
+    insert(new PlayerInsight("OVERCOMMIT", "Match events show large elixir commits followed by tower or control loss."));
+end

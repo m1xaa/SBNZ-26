@@ -1,0 +1,79 @@
+package rules;
+
+import com.cr.back.domain.CardRole;
+import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.PlayerFact;
+import com.cr.back.rules.facts.PlayerInsight;
+
+rule "18 validity - exactly eight cards"
+salience 40
+when
+    $d : DeckCandidate(valid == true)
+    eval($d.getCards().size() != 8)
+then
+    $d.reject("Rejected because the deck must have exactly 8 cards.");
+    update($d);
+end
+
+rule "19 validity - exactly one main win condition"
+salience 40
+when
+    $d : DeckCandidate(valid == true)
+    eval($d.countRole(CardRole.WIN_CONDITION) != 1)
+then
+    $d.reject("Rejected because the deck must have exactly one main win condition.");
+    update($d);
+end
+
+rule "20 validity - requires small spell"
+salience 40
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasRole(CardRole.SMALL_SPELL))
+then
+    $d.reject("Rejected because the deck has no small spell.");
+    update($d);
+end
+
+rule "21 validity - requires tank answer or single target dps"
+salience 40
+when
+    $d : DeckCandidate(valid == true)
+    eval(!$d.hasRole(CardRole.SINGLE_TARGET_DPS))
+then
+    $d.reject("Rejected because the deck lacks a reliable tank answer.");
+    update($d);
+end
+
+rule "22 validity - air weakness requires two anti-air cards"
+salience 40
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $d : DeckCandidate(valid == true)
+    eval($d.countRole(CardRole.ANTI_AIR) < 2)
+then
+    $d.reject("Rejected because air weakness requires at least two anti-air cards.");
+    update($d);
+end
+
+rule "23 validity - average elixir must match habits"
+salience 40
+when
+    $p : PlayerFact()
+    $d : DeckCandidate(valid == true)
+    eval($p.maxPreferredAverageElixir() > 0 && $d.averageElixir() > $p.maxPreferredAverageElixir() + 0.7)
+then
+    $d.reject("Rejected because average elixir is too high for the player's habits.");
+    update($d);
+end
+
+rule "24 validity - key cards need acceptable levels"
+salience 40
+when
+    $d : DeckCandidate(valid == true)
+    eval(DeckRulesSupport.hasSelectedLowLevelCard($d, 9))
+then
+    $d.reject("Rejected because at least one key selected card is below the minimum level.");
+    update($d);
+end
