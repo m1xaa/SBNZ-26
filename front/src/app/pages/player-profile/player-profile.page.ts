@@ -5,6 +5,10 @@ import { finalize, forkJoin } from 'rxjs';
 import {
   Archetype,
   CardOption,
+  MatchOutcome,
+  MatchRequest,
+  MatchEventType,
+  MatchResponse,
   PlayerCard,
   PlayerCardRequest,
   PlayerCardResponse,
@@ -25,6 +29,15 @@ const ARCHETYPES: Archetype[] = [
   'AIR_COUNTER'
 ];
 
+const MATCH_OUTCOMES: MatchOutcome[] = ['WIN', 'LOSS'];
+const MATCH_EVENT_TYPES: MatchEventType[] = [
+  'LARGE_ELIXIR_COMMIT',
+  'TOWER_LOST',
+  'CONTROL_LOST',
+  'USED_CHEAP_DECK',
+  'USED_HEAVY_DECK'
+];
+
 @Component({
   selector: 'app-player-profile-page',
   standalone: true,
@@ -42,14 +55,18 @@ export class PlayerProfilePage implements OnInit {
   protected readonly playstyles = signal<PlaystyleOption[]>([]);
   protected readonly cardOptions = signal<CardOption[]>([]);
   protected readonly collection = signal<PlayerCard[]>([]);
+  protected readonly matches = signal<MatchResponse[]>([]);
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly collectionSaving = signal(false);
+  protected readonly matchSaving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
   protected readonly savedProfile = signal<PlayerResponse | null>(null);
 
   protected readonly playerSelect = new FormControl<number | 'new'>('new', { nonNullable: true });
+  protected readonly matchOutcomes = MATCH_OUTCOMES;
+  protected readonly matchEventTypes = MATCH_EVENT_TYPES;
 
   protected readonly profileForm = this.formBuilder.group({
     username: ['', [Validators.required, Validators.maxLength(80)]],
@@ -61,6 +78,17 @@ export class PlayerProfilePage implements OnInit {
     maxPreferredAverageElixir: [4, [Validators.required, Validators.min(1), Validators.max(9)]],
     preferredArchetype: new FormControl<Archetype | null>(null),
     dislikedCards: this.formBuilder.control<string[]>([])
+  });
+
+  protected readonly matchForm = this.formBuilder.group({
+    outcome: ['WIN' as MatchOutcome, [Validators.required]],
+    opponentArchetype: new FormControl<Archetype | null>(null),
+    deckAverageElixir: [4, [Validators.required, Validators.min(1), Validators.max(9)]],
+    durationSeconds: [120, [Validators.required, Validators.min(10), Validators.max(600)]],
+    playedAt: [''],
+    eventType: new FormControl<string | null>(null),
+    eventSecond: [0, [Validators.min(0), Validators.max(300)]],
+    eventValue: [0, [Validators.min(0)]]
   });
 
   protected selectedPlaystyle(): PlaystyleOption | null {
@@ -91,6 +119,7 @@ export class PlayerProfilePage implements OnInit {
       if (player) {
         this.populateForm(player);
         this.loadPlayerCollection(player.id);
+        this.loadPlayerMatches(player.id);
       }
     });
 
@@ -138,6 +167,7 @@ export class PlayerProfilePage implements OnInit {
         this.playerSelect.setValue(profile.id, { emitEvent: false });
         this.populateForm(profile);
         this.loadPlayerCollection(profile.id);
+        this.loadPlayerMatches(profile.id);
       },
       error: () => {
         this.errorMessage.set('The backend could not save this profile. Check that it is running on port 8080.');
@@ -210,6 +240,76 @@ export class PlayerProfilePage implements OnInit {
       error: () => {
         this.collection.set(this.buildEmptyCollection(this.cardOptions()));
       }
+    });
+  }
+
+  private loadPlayerMatches(playerId: number): void {
+    this.playerService.getPlayerMatches(playerId).subscribe({
+      next: (matches) => this.matches.set(matches),
+      error: () => this.matches.set([])
+    });
+  }
+
+  protected saveMatch(): void {
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    const selectedPlayer = this.playerSelect.value;
+    if (selectedPlayer === 'new') {
+      this.errorMessage.set('Save the player profile first before adding a match.');
+      return;
+    }
+
+    const request = this.toMatchRequest();
+    this.matchSaving.set(true);
+    this.playerService
+      .createPlayerMatch(selectedPlayer, request)
+      .pipe(finalize(() => this.matchSaving.set(false)))
+      .subscribe({
+        next: (match) => {
+          this.matches.set([match, ...this.matches()]);
+          this.successMessage.set('Match added successfully.');
+          this.resetMatchForm();
+        },
+        error: () => {
+          this.errorMessage.set('Unable to add match. Confirm the backend is running on port 8080.');
+        }
+      });
+  }
+
+  private toMatchRequest(): MatchRequest {
+    const value = this.matchForm.getRawValue();
+    const playedAt = value.playedAt ? new Date(value.playedAt).toISOString() : null;
+    const events = value.eventType
+      ? [
+          {
+            type: value.eventType as any,
+            occurredAtSecond: Number(value.eventSecond),
+            value: Number(value.eventValue)
+          }
+        ]
+      : [];
+
+    return {
+      outcome: value.outcome,
+      opponentArchetype: value.opponentArchetype ?? 'CYCLE',
+      deckAverageElixir: Number(value.deckAverageElixir),
+      durationSeconds: Number(value.durationSeconds),
+      playedAt,
+      events
+    };
+  }
+
+  protected resetMatchForm(): void {
+    this.matchForm.reset({
+      outcome: 'WIN',
+      opponentArchetype: null,
+      deckAverageElixir: 4,
+      durationSeconds: 120,
+      playedAt: '',
+      eventType: null,
+      eventSecond: 0,
+      eventValue: 0
     });
   }
 

@@ -80,3 +80,43 @@ export interface PlayerCardResponse {
   level: number;
   reliablyUsed: boolean;
 }
+
+export type MatchOutcome = 'WIN' | 'LOSS';
+
+export type MatchEventType =
+  | 'LARGE_ELIXIR_COMMIT'
+  | 'TOWER_LOST'
+  | 'CONTROL_LOST'
+  | 'USED_CHEAP_DECK'
+  | 'USED_HEAVY_DECK';
+
+export interface MatchEventRequest {
+  type: MatchEventType;
+  occurredAtSecond: number;
+  value: number;
+}
+
+export interface MatchEventResponse {
+  type: MatchEventType;
+  occurredAtSecond: number;
+  value: number;
+}
+
+export interface MatchRequest {
+  outcome: MatchOutcome;
+  opponentArchetype: Archetype;
+  deckAverageElixir: number;
+  durationSeconds: number;
+  playedAt?: string | null;
+  events: MatchEventRequest[];
+}
+
+export interface MatchResponse {
+  id: number;
+  outcome: MatchOutcome;
+  opponentArchetype: Archetype;
+  deckAverageElixir: number;
+  durationSeconds: number;
+  playedAt: string;
+  events: MatchEventResponse[];
+}

@@ -181,6 +181,117 @@
         </div>
       </section>
 
+      <section class="form-section match-section">
+        <div class="section-heading">
+          <div>
+            <h2>Match history</h2>
+            <p class="collection-summary">Add one match at a time, then update the list.</p>
+          </div>
+        </div>
+
+        <form [formGroup]="matchForm" class="match-form" (ngSubmit)="saveMatch()">
+          <div class="match-grid">
+            <label>
+              Outcome
+              <select formControlName="outcome">
+                @for (outcome of matchOutcomes; track outcome) {
+                  <option [ngValue]="outcome">{{ outcome }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Opponent archetype
+              <select formControlName="opponentArchetype">
+                <option [ngValue]="null">Choose archetype</option>
+                @for (archetype of archetypes; track archetype) {
+                  <option [ngValue]="archetype">{{ prettifyArchetype(archetype) }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Average deck elixir
+              <input type="number" min="1" max="9" step="0.1" formControlName="deckAverageElixir" />
+            </label>
+
+            <label>
+              Duration seconds
+              <input type="number" min="10" max="600" formControlName="durationSeconds" />
+            </label>
+
+            <label>
+              Played at
+              <input type="datetime-local" formControlName="playedAt" />
+            </label>
+
+            <label>
+              Event type
+              <select formControlName="eventType">
+                <option [ngValue]="null">No event</option>
+                @for (eventType of matchEventTypes; track eventType) {
+                  <option [ngValue]="eventType">{{ eventType }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Event second
+              <input type="number" min="0" max="300" formControlName="eventSecond" />
+            </label>
+
+            <label>
+              Event value
+              <input type="number" min="0" formControlName="eventValue" />
+            </label>
+          </div>
+
+          <div class="match-actions">
+            <button type="button" class="secondary-button" (click)="resetMatchForm()">Reset match form</button>
+            <button type="submit" class="primary-button" [disabled]="matchSaving() || playerSelect.value === 'new'">
+              {{ playerSelect.value === 'new' ? 'Save profile first' : (matchSaving() ? 'Adding...' : 'Add match') }}
+            </button>
+          </div>
+        </form>
+
+        <div class="match-list">
+          @if (matches().length > 0) {
+            <table>
+              <thead>
+                <tr>
+                  <th>Outcome</th>
+                  <th>Opponent</th>
+                  <th>Elixir</th>
+                  <th>Duration</th>
+                  <th>Played at</th>
+                  <th>Events</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (match of matches(); track match.id) {
+                  <tr>
+                    <td>{{ match.outcome }}</td>
+                    <td>{{ prettifyArchetype(match.opponentArchetype) }}</td>
+                    <td>{{ match.deckAverageElixir }}</td>
+                    <td>{{ match.durationSeconds }}</td>
+                    <td>{{ match.playedAt }}</td>
+                    <td>
+                      @if (match.events.length > 0) {
+                        {{ match.events.map((event) => `${event.type}@${event.occurredAtSecond}s`).join(', ') }}
+                      } @else {
+                        -
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="empty-state">No matches in history yet.</div>
+          }
+        </div>
+      </section>
+
       @if (errorMessage()) {
         <div class="alert error">{{ errorMessage() }}</div>
       }

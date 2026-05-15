@@ -2,6 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  MatchRequest,
+  MatchResponse,
   PlayerCardRequest,
   PlayerCardResponse,
   PlayerProfileRequest,
@@ -34,5 +36,13 @@ export class PlayerService {
 
   updatePlayerCollection(playerId: number, request: PlayerCardRequest[]): Observable<PlayerCardResponse[]> {
     return this.http.put<PlayerCardResponse[]>(`${API_BASE_URL}/players/${playerId}/collection`, request);
+  }
+
+  getPlayerMatches(playerId: number): Observable<MatchResponse[]> {
+    return this.http.get<MatchResponse[]>(`${API_BASE_URL}/players/${playerId}/matches`);
+  }
+
+  createPlayerMatch(playerId: number, request: MatchRequest): Observable<MatchResponse> {
+    return this.http.post<MatchResponse>(`${API_BASE_URL}/players/${playerId}/matches`, request);
   }
 }
