@@ -39,6 +39,7 @@ public class CardController {
     public CardResponse create(@RequestBody CardRequest request) {
         CardEntity card = cardRepository.save(new CardEntity(
                 request.name(),
+                request.imageAssetId(),
                 request.elixirCost(),
                 request.type(),
                 request.roles()
@@ -50,7 +51,7 @@ public class CardController {
     public CardResponse update(@PathVariable Long id, @RequestBody CardRequest request) {
         CardEntity card = cardRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Card not found: " + id));
-        card.update(request.name(), request.elixirCost(), request.type(), request.roles());
+        card.update(request.name(), request.imageAssetId(), request.elixirCost(), request.type(), request.roles());
         return CardResponse.from(cardRepository.save(card));
     }
 
@@ -60,12 +61,19 @@ public class CardController {
         cardRepository.deleteById(id);
     }
 
-    public record CardRequest(String name, double elixirCost, CardType type, Set<CardRole> roles) {
+    public record CardRequest(String name, Integer imageAssetId, double elixirCost, CardType type, Set<CardRole> roles) {
     }
 
-    public record CardResponse(Long id, String name, double elixirCost, CardType type, Set<CardRole> roles) {
+    public record CardResponse(Long id, String name, Integer imageAssetId, double elixirCost, CardType type, Set<CardRole> roles) {
         static CardResponse from(CardEntity card) {
-            return new CardResponse(card.getId(), card.getName(), card.getElixirCost(), card.getType(), card.getRoles());
+            return new CardResponse(
+                    card.getId(),
+                    card.getName(),
+                    card.getImageAssetId(),
+                    card.getElixirCost(),
+                    card.getType(),
+                    card.getRoles()
+            );
         }
     }
 }

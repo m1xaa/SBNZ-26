@@ -11,10 +11,16 @@ public record DeckRecommendationResponse(
         Archetype archetype,
         int score,
         double averageElixir,
-        List<String> cards,
+        List<RecommendedCardResponse> cards,
         List<String> insights,
         List<String> reasons,
         List<String> warnings,
         Map<String, String> alternatives
 ) {
+    public record RecommendedCardResponse(
+            String name,
+            Integer imageAssetId,
+            String image
+    ) {
+    }
 }

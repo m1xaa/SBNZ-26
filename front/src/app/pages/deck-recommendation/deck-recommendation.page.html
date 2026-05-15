@@ -1,0 +1,87 @@
+<main class="recommendation-page">
+  <section class="page-hero">
+    <div>
+      <p class="eyebrow">Deck recommendation</p>
+      <h1>Get a deck recommendation</h1>
+      <p class="intro">Select a saved player profile and request a deck recommendation from the backend.</p>
+    </div>
+  </section>
+
+  <section class="recommendation-panel">
+    <div class="form-row">
+      <label>
+        Saved player
+        <select [formControl]="selectedPlayer">
+          <option [ngValue]="'new'">Select player</option>
+          <option *ngFor="let player of players()" [ngValue]="player.id">{{ player.username }}</option>
+        </select>
+      </label>
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="recommending() || selectedPlayer.value === 'new'"
+        (click)="recommendDeck()"
+      >
+        {{ recommending() ? 'Recommending...' : 'Recommend deck' }}
+      </button>
+    </div>
+
+    <div class="message-row">
+      <div *ngIf="loading()" class="alert info">Loading players...</div>
+      <div *ngIf="errorMessage()" class="alert error">{{ errorMessage() }}</div>
+    </div>
+  </section>
+
+  <section *ngIf="recommendation() as rec" class="results-section">
+    <div class="result-summary">
+      <h2>Recommended deck</h2>
+      <p><strong>Player:</strong> {{ rec.username }}</p>
+      <p><strong>Archetype:</strong> {{ rec.archetype }}</p>
+      <p><strong>Average elixir:</strong> {{ rec.averageElixir }}</p>
+      <p><strong>Score:</strong> {{ rec.score }}</p>
+    </div>
+
+    <div class="deck-grid">
+      <article *ngFor="let card of rec.cards" class="deck-card">
+        <img
+          *ngIf="getCardImageSrc(card.image) as cardImageSrc"
+          class="card-image"
+          [src]="cardImageSrc"
+          [alt]="card.name"
+        />
+        <strong>{{ card.name }}</strong>
+        <p *ngIf="card.imageAssetId != null">Image asset id: {{ card.imageAssetId }}</p>
+      </article>
+    </div>
+
+    <div *ngIf="rec.reasons.length > 0" class="explanation-panel">
+      <h3>Reasons</h3>
+      <ol>
+        <li *ngFor="let reason of rec.reasons">{{ reason }}</li>
+      </ol>
+    </div>
+
+    <div *ngIf="rec.insights.length > 0" class="weaknesses-panel">
+      <h3>Insights</h3>
+      <ul>
+        <li *ngFor="let insight of rec.insights">{{ insight }}</li>
+      </ul>
+    </div>
+
+    <div *ngIf="(rec.alternatives | keyvalue).length > 0" class="replacements-panel">
+      <h3>Alternatives</h3>
+      <ul>
+        <li *ngFor="let alternative of rec.alternatives | keyvalue">
+          <strong>{{ alternative.key }}</strong> -> {{ alternative.value }}
+        </li>
+      </ul>
+    </div>
+
+    <div *ngIf="rec.warnings.length > 0" class="warnings-panel">
+      <h3>Warnings</h3>
+      <ul>
+        <li *ngFor="let warning of rec.warnings">{{ warning }}</li>
+      </ul>
+    </div>
+  </section>
+</main>

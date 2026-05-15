@@ -120,3 +120,63 @@ export interface MatchResponse {
   playedAt: string;
   events: MatchEventResponse[];
 }
+
+export interface PlayerPreferences {
+  username?: string;
+  preferredPlaystyle?: string | null;
+  prefersAggressivePlay?: boolean;
+  prefersControlPlay?: boolean;
+  likesHeavyDecks?: boolean;
+  dislikedHeavyDecks?: boolean;
+  preferredArchetype?: Archetype | null;
+  targetMode?: string | null;
+}
+
+export interface OwnedCard {
+  cardName: string;
+  level: number;
+  unlocked: boolean;
+}
+
+export interface MatchHistoryEvent {
+  type: MatchEventType;
+  occurredAtSecond: number;
+  value: number;
+}
+
+export interface MatchHistoryItem {
+  result: MatchOutcome;
+  opponentArchetype: Archetype;
+  playerDeckArchetype?: string | null;
+  averageElixir?: number;
+  matchDate?: string | null;
+  events?: MatchHistoryEvent[];
+}
+
+export interface DeckRecommendationRequest {
+  playerPreferences: PlayerPreferences;
+  ownedCards: OwnedCard[];
+  recentMatches: MatchHistoryItem[];
+  favoriteCards?: string[];
+  excludedCards?: string[];
+  recommendationMode?: 'MAIN_DECK' | 'MULTIPLE_ALTERNATIVES' | 'REPLACEMENTS_ONLY';
+}
+
+export interface RecommendedCard {
+  name: string;
+  imageAssetId?: number | null;
+  image?: string | null;
+}
+
+export interface DeckRecommendationResponse {
+  playerId: number;
+  username: string;
+  archetype: Archetype;
+  score: number;
+  averageElixir: number;
+  cards?: RecommendedCard[];
+  insights?: string[];
+  reasons?: string[];
+  warnings?: string[];
+  alternatives?: Record<string, string>;
+}

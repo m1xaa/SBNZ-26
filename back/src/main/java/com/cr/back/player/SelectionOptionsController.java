@@ -1,18 +1,15 @@
 package com.cr.back.player;
 
+import com.cr.back.card.CardImageSupport;
 import com.cr.back.domain.CardEntity;
 import com.cr.back.domain.PlayerPlaystyleEntity;
 import com.cr.back.repository.CardRepository;
 import com.cr.back.repository.PlayerPlaystyleRepository;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Base64;
 import java.util.List;
 
 @RestController
@@ -69,27 +66,16 @@ public class SelectionOptionsController {
     public record CardOptionResponse(
             Long id,
             String name,
+            Integer imageAssetId,
             String image
     ) {
         static CardOptionResponse from(CardEntity card) {
             return new CardOptionResponse(
                     card.getId(),
                     card.getName(),
-                    loadBase64Image(card.getId())
+                    card.getImageAssetId(),
+                    CardImageSupport.loadBase64Image(card.getImageAssetId())
             );
-        }
-
-        private static String loadBase64Image(Long cardId) {
-            ClassPathResource image = new ClassPathResource("images/" + cardId + ".png");
-            if (!image.exists()) {
-                return null;
-            }
-            try {
-                byte[] bytes = image.getInputStream().readAllBytes();
-                return "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes);
-            } catch (IOException exception) {
-                throw new UncheckedIOException("Failed to load card image: " + cardId, exception);
-            }
         }
     }
 }

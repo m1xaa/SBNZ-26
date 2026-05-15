@@ -7,6 +7,7 @@ import java.util.Set;
 
 public record CardFact(
         String name,
+        Integer imageAssetId,
         double elixirCost,
         CardType type,
         Set<CardRole> roles,

@@ -5,8 +5,6 @@ import com.cr.back.domain.CardRole;
 import com.cr.back.rules.facts.CardFact;
 import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.DeckRequirementFact;
-import com.cr.back.rules.facts.MatchEventFact;
-import com.cr.back.rules.facts.MatchFact;
 import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.SelectedCardFact;
 
@@ -17,41 +15,6 @@ import java.util.Optional;
 
 public final class DeckRulesSupport {
     private DeckRulesSupport() {
-    }
-
-    public static long lossesAgainstAir(Collection<MatchFact> matches) {
-        return matches.stream()
-                .filter(match -> match.outcome().name().equals("LOSS"))
-                .filter(match -> match.opponentArchetype() == Archetype.AIR_COUNTER)
-                .count();
-    }
-
-    public static long cheapDeckWins(Collection<MatchFact> matches) {
-        return matches.stream()
-                .filter(match -> match.outcome().name().equals("WIN"))
-                .filter(match -> match.deckAverageElixir() < 3.5)
-                .count();
-    }
-
-    public static long heavyDeckLosses(Collection<MatchFact> matches) {
-        return matches.stream()
-                .filter(match -> match.outcome().name().equals("LOSS"))
-                .filter(match -> match.deckAverageElixir() >= 3.8)
-                .count();
-    }
-
-    public static boolean repeatedOvercommit(Collection<MatchFact> matches, Collection<MatchEventFact> events) {
-        long affectedLosses = matches.stream()
-                .filter(match -> match.outcome().name().equals("LOSS"))
-                .filter(match -> events.stream().anyMatch(event ->
-                        event.matchId().equals(match.id())
-                                && event.type().name().equals("LARGE_ELIXIR_COMMIT")
-                                && events.stream().anyMatch(later ->
-                                later.matchId().equals(match.id())
-                                        && later.occurredAtSecond() > event.occurredAtSecond()
-                                        && (later.type().name().equals("TOWER_LOST") || later.type().name().equals("CONTROL_LOST")))))
-                .count();
-        return affectedLosses >= 2;
     }
 
     public static boolean hasHighLevelRole(Collection<CardFact> cards, CardRole role, int minimumLevel) {

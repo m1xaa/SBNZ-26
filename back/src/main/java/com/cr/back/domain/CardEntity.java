@@ -26,6 +26,9 @@ public class CardEntity {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Column(unique = true)
+    private Integer imageAssetId;
+
     @Column(nullable = false)
     private double elixirCost;
 
@@ -43,7 +46,12 @@ public class CardEntity {
     }
 
     public CardEntity(String name, double elixirCost, CardType type, Set<CardRole> roles) {
+        this(name, null, elixirCost, type, roles);
+    }
+
+    public CardEntity(String name, Integer imageAssetId, double elixirCost, CardType type, Set<CardRole> roles) {
         this.name = name;
+        this.imageAssetId = imageAssetId;
         this.elixirCost = elixirCost;
         this.type = type;
         this.roles = new HashSet<>(roles);
@@ -55,6 +63,10 @@ public class CardEntity {
 
     public String getName() {
         return name;
+    }
+
+    public Integer getImageAssetId() {
+        return imageAssetId;
     }
 
     public double getElixirCost() {
@@ -70,7 +82,12 @@ public class CardEntity {
     }
 
     public void update(String name, double elixirCost, CardType type, Set<CardRole> roles) {
+        update(name, this.imageAssetId, elixirCost, type, roles);
+    }
+
+    public void update(String name, Integer imageAssetId, double elixirCost, CardType type, Set<CardRole> roles) {
         this.name = name;
+        this.imageAssetId = imageAssetId;
         this.elixirCost = elixirCost;
         this.type = type;
         this.roles = new HashSet<>(roles);

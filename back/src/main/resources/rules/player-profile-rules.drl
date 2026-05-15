@@ -1,19 +1,78 @@
 package rules;
 
 import com.cr.back.domain.Archetype;
-import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.domain.MatchOutcome;
 import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.MatchFact;
 import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
 
-global java.util.Collection matches;
+rule "00 profile - preferred archetype gets baseline"
+salience 110
+when
+    $p : PlayerFact(preferredArchetype != null, $preferred : preferredArchetype)
+    $s : ArchetypeScore(archetype == $preferred)
+    eval(!$s.hasAppliedRule("00"))
+then
+    $s.markRule("00");
+    $s.addScore(15, "Player preference gives the preferred archetype a baseline priority.");
+    update($s);
+end
+
+rule "00a profile - fast preference gives cycle baseline"
+salience 108
+when
+    $p : PlayerFact()
+    eval($p.prefersFastGame())
+    $s : ArchetypeScore(archetype == Archetype.CYCLE)
+    eval(!$s.hasAppliedRule("00a"))
+then
+    $s.markRule("00a");
+    $s.addScore(10, "Fast-play preference keeps cycle available even with limited recent match data.");
+    update($s);
+end
+
+rule "00b profile - patient or heavy preference gives beatdown/control baseline"
+salience 108
+when
+    $p : PlayerFact()
+    eval($p.patientGame() || $p.likesHeavyDecks())
+    $s : ArchetypeScore(archetype in (Archetype.BEATDOWN, Archetype.CONTROL))
+    eval(!$s.hasAppliedRule("00b"))
+then
+    $s.markRule("00b");
+    $s.addScore(10, "Slower play preference keeps beatdown/control available as fallback options.");
+    update($s);
+end
+
+rule "00c profile - aggressive pressure gives bridge spam baseline"
+salience 108
+when
+    $p : PlayerFact()
+    eval($p.aggressivePressure())
+    $s : ArchetypeScore(archetype == Archetype.BRIDGE_SPAM)
+    eval(!$s.hasAppliedRule("00c"))
+then
+    $s.markRule("00c");
+    $s.addScore(10, "Aggressive pressure preference keeps bridge-spam available as a fallback.");
+    update($s);
+end
 
 rule "01 profile - player fits cycle style"
 salience 100
 when
     $p : PlayerFact()
     not PlayerInsight(code == "CYCLE_STYLE")
-    eval($p.prefersFastGame() && !$p.likesHeavyDecks() && DeckRulesSupport.cheapDeckWins(matches) >= 2)
+    eval($p.prefersFastGame() && !$p.likesHeavyDecks())
+    $cheapWins : Number(intValue >= 3) from accumulate(
+        MatchFact(outcome == MatchOutcome.WIN, deckAverageElixir < 3.5) over window:length(8),
+        count(1)
+    )
+    $allWins : Number(intValue > 0) from accumulate(
+        MatchFact(outcome == MatchOutcome.WIN) over window:length(8),
+        count(1)
+    )
+    eval($cheapWins.intValue() * 2 >= $allWins.intValue())
 then
     insert(new PlayerInsight("CYCLE_STYLE", "Player prefers fast games and wins often with decks below 3.5 average elixir."));
 end
@@ -33,7 +92,10 @@ salience 95
 when
     $s : ArchetypeScore(archetype == Archetype.CYCLE)
     eval(!$s.hasAppliedRule("03"))
-    eval(DeckRulesSupport.cheapDeckWins(matches) >= 2)
+    Number(intValue >= 3) from accumulate(
+        MatchFact(outcome == MatchOutcome.WIN, deckAverageElixir < 3.5) over window:length(8),
+        count(1)
+    )
 then
     $s.markRule("03");
     $s.addScore(25, "Recent wins came from cheap decks, so cycle gets higher priority.");
@@ -45,7 +107,10 @@ salience 95
 when
     $s : ArchetypeScore(archetype == Archetype.BEATDOWN)
     eval(!$s.hasAppliedRule("04"))
-    eval(DeckRulesSupport.heavyDeckLosses(matches) >= 2)
+    Number(intValue >= 2) from accumulate(
+        MatchFact(outcome == MatchOutcome.LOSS, deckAverageElixir >= 3.8) over window:length(10),
+        count(1)
+    )
 then
     $s.markRule("04");
     $s.addScore(-20, "Recent losses with heavy decks reduce beatdown priority.");

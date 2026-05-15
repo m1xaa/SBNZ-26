@@ -92,3 +92,15 @@ then
     $d.addScore(10, "Air weakness corrected with reinforced anti-air support.");
     update($d);
 end
+
+rule "17 fallback - build candidate from any viable archetype score"
+salience 50
+when
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    not DeckCandidate(archetype == $a)
+then
+    DeckCandidate deck = new DeckCandidate($a);
+    DeckRulesSupport.buildDeck(deck, cards);
+    deck.addScore($s.getScore(), "Fallback candidate formed from the best available unlocked cards for this archetype.");
+    insert(deck);
+end
