@@ -1,0 +1,122 @@
+<main class="card-admin-page">
+  <section class="page-hero" aria-labelledby="card-admin-title">
+    <div>
+      <p class="eyebrow">Admin cards</p>
+      <h1 id="card-admin-title">Card management</h1>
+      <p class="intro">Create and update cards using the backend /api/cards admin endpoints.</p>
+    </div>
+    <div class="status-panel">
+      <span class="status-label">{{ isEditing ? 'Edit card' : 'New card' }}</span>
+      @if (selectedCard()) {
+        <strong>{{ selectedCard()?.name }}</strong>
+        <span>ID {{ selectedCard()?.id }}</span>
+      } @else {
+        <strong>Create a new card</strong>
+        <span>POST /api/cards</span>
+      }
+    </div>
+  </section>
+
+  @if (loading()) {
+    <section class="message-band">Loading cards from backend...</section>
+  } @else {
+    <div class="card-admin-layout">
+      <section class="cards-table-section">
+        <div class="section-heading">
+          <h2>Card list</h2>
+          <button type="button" class="secondary-button" (click)="resetForm()">New card</button>
+        </div>
+
+        <div class="table-wrapper">
+          @if (cards().length > 0) {
+            <table>
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Elixir</th>
+                  <th>Roles</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (card of cards(); track card.id) {
+                  <tr>
+                    <td class="card-image-cell">
+                      @if (card.image) {
+                        <img src="{{ card.image }}" alt="{{ card.name }}" />
+                      } @else {
+                        <span class="image-placeholder">No image</span>
+                      }
+                    </td>
+                    <td>{{ card.name }}</td>
+                    <td>{{ card.type }}</td>
+                    <td>{{ card.elixirCost }}</td>
+                    <td>{{ card.roles.join(', ') }}</td>
+                    <td class="row-actions">
+                      <button type="button" (click)="selectCard(card)">Edit</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="empty-state">No cards available yet.</div>
+          }
+        </div>
+      </section>
+
+      <section class="card-form-section">
+        <div class="section-heading">
+          <h2>{{ isEditing ? 'Edit card' : 'Create card' }}</h2>
+        </div>
+
+        <form [formGroup]="cardForm" (ngSubmit)="saveCard()" class="card-form">
+          <label>
+            Card name
+            <input type="text" formControlName="name" placeholder="Enter card name" />
+          </label>
+
+          <label>
+            Elixir cost
+            <input type="number" formControlName="elixirCost" min="0.5" max="10" step="0.5" />
+          </label>
+
+          <label>
+            Card type
+            <select formControlName="type">
+              <option [ngValue]="null">Select type</option>
+              @for (type of cardTypes; track type) {
+                <option [ngValue]="type">{{ type }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Roles
+            <select multiple formControlName="roles" class="multi-select">
+              @for (role of cardRoles; track role) {
+                <option [ngValue]="role">{{ role }}</option>
+              }
+            </select>
+          </label>
+
+          @if (errorMessage()) {
+            <div class="alert error">{{ errorMessage() }}</div>
+          }
+          @if (successMessage()) {
+            <div class="alert success">{{ successMessage() }}</div>
+          }
+
+          <div class="actions">
+            <button type="button" class="secondary-button" (click)="resetForm()">Reset</button>
+            <button type="submit" [disabled]="saving()">
+              {{ saving() ? 'Saving...' : (isEditing ? 'Save changes' : 'Create card') }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</main>

@@ -8,7 +8,9 @@ import com.cr.back.repository.PlayerCardRepository;
 import com.cr.back.repository.PlayerRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,7 +61,60 @@ public class PlayerCollectionController {
         return collection(playerId);
     }
 
+    @PostMapping("/card-levels")
+    @Transactional
+    public List<PlayerCardResponse> upsertCardLevels(
+            @PathVariable Long playerId,
+            @RequestBody List<CardLevelRequest> requests
+    ) {
+        PlayerEntity player = findPlayer(playerId);
+        List<PlayerCardEntity> playerCards = requests.stream()
+                .map(request -> upsertCardLevel(player, request.cardId(), request.level()))
+                .toList();
+        playerCardRepository.saveAll(playerCards);
+        return collection(playerId);
+    }
+
+    @PatchMapping("/cards/{cardId}/level")
+    @Transactional
+    public PlayerCardResponse updateCardLevel(
+            @PathVariable Long playerId,
+            @PathVariable Long cardId,
+            @RequestBody CardLevelUpdateRequest request
+    ) {
+        PlayerEntity player = findPlayer(playerId);
+        PlayerCardEntity playerCard = upsertCardLevel(player, cardId, request.level());
+        return PlayerCardResponse.from(playerCardRepository.save(playerCard));
+    }
+
+    private PlayerEntity findPlayer(Long playerId) {
+        return playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
+    }
+
+    private PlayerCardEntity upsertCardLevel(PlayerEntity player, Long cardId, int level) {
+        validateLevel(level);
+        CardEntity card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new IllegalArgumentException("Card not found: " + cardId));
+        PlayerCardEntity playerCard = playerCardRepository.findByPlayerIdAndCardId(player.getId(), cardId)
+                .orElseGet(() -> new PlayerCardEntity(player, card, true, level, false));
+        playerCard.updateLevel(level);
+        return playerCard;
+    }
+
+    private void validateLevel(int level) {
+        if (level < 1 || level > 15) {
+            throw new IllegalArgumentException("Card level must be between 1 and 15.");
+        }
+    }
+
     public record PlayerCardRequest(Long cardId, boolean unlocked, int level, boolean reliablyUsed) {
+    }
+
+    public record CardLevelRequest(Long cardId, int level) {
+    }
+
+    public record CardLevelUpdateRequest(int level) {
     }
 
     public record PlayerCardResponse(

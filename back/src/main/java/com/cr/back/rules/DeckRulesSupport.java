@@ -4,9 +4,11 @@ import com.cr.back.domain.Archetype;
 import com.cr.back.domain.CardRole;
 import com.cr.back.rules.facts.CardFact;
 import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.DeckRequirementFact;
 import com.cr.back.rules.facts.MatchEventFact;
 import com.cr.back.rules.facts.MatchFact;
 import com.cr.back.rules.facts.PlayerFact;
+import com.cr.back.rules.facts.SelectedCardFact;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -94,6 +96,30 @@ public final class DeckRulesSupport {
         addBest(candidate, cards, CardRole.SINGLE_TARGET_DPS, 5.0);
         fill(candidate, cards, CardRole.CYCLE);
         fill(candidate, cards, CardRole.SUPPORT);
+    }
+
+    public static CardFact bestAvailableForRequirement(
+            Collection<CardFact> cards,
+            DeckRequirementFact requirement,
+            Collection<SelectedCardFact> alreadySelected
+    ) {
+        DeckCandidate selectedForArchetype = new DeckCandidate(requirement.archetype());
+        alreadySelected.stream()
+                .filter(selected -> selected.archetype() == requirement.archetype())
+                .map(SelectedCardFact::card)
+                .forEach(selectedForArchetype::addCard);
+        return best(cards, requirement.role(), requirement.maxElixir(), selectedForArchetype)
+                .orElse(null);
+    }
+
+    public static void addSelectedCards(DeckCandidate candidate, Collection<SelectedCardFact> selectedCards) {
+        selectedCards.stream()
+                .filter(selected -> selected.archetype() == candidate.getArchetype())
+                .forEach(selected -> {
+                    if (candidate.addCard(selected.card())) {
+                        candidate.addScore(2, selected.reason());
+                    }
+                });
     }
 
     public static void addExtraAntiAir(DeckCandidate candidate, Collection<CardFact> cards) {

@@ -1,0 +1,73 @@
+package rules;
+
+import com.cr.back.domain.Archetype;
+import com.cr.back.domain.CardRole;
+import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.CardFact;
+import com.cr.back.rules.facts.DeckRequirementFact;
+import com.cr.back.rules.facts.PlayerInsight;
+import com.cr.back.rules.facts.SelectedCardFact;
+
+global java.util.Collection cards;
+
+rule "12 requirement - cycle deck structure"
+salience 70
+when
+    ArchetypeScore(archetype == Archetype.CYCLE, score > 0)
+    not DeckRequirementFact(archetype == Archetype.CYCLE, code == "CYCLE_CORE")
+then
+    insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.WIN_CONDITION, 1, 4.0, "CYCLE_CORE", "Cycle requires a cheap upgraded win condition."));
+    insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.SMALL_SPELL, 1, 3.0, "CYCLE_SMALL_SPELL", "Cycle requires a cheap small spell."));
+    insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.BUILDING, 1, 5.0, "CYCLE_BUILDING", "Cycle requires a defensive building."));
+    insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.CYCLE, 2, 2.0, "CYCLE_CHEAP_CARDS", "Cycle requires cheap support cards."));
+end
+
+rule "13 requirement - beatdown deck structure"
+salience 70
+when
+    ArchetypeScore(archetype == Archetype.BEATDOWN, score > 0)
+    not DeckRequirementFact(archetype == Archetype.BEATDOWN, code == "BEATDOWN_CORE")
+then
+    insert(new DeckRequirementFact(Archetype.BEATDOWN, CardRole.TANK, 1, 9.0, "BEATDOWN_CORE", "Beatdown requires a tank anchor."));
+    insert(new DeckRequirementFact(Archetype.BEATDOWN, CardRole.SUPPORT, 1, 5.0, "BEATDOWN_SUPPORT", "Beatdown requires support behind the tank."));
+    insert(new DeckRequirementFact(Archetype.BEATDOWN, CardRole.BIG_SPELL, 1, 6.0, "BEATDOWN_BIG_SPELL", "Beatdown requires spell support for defensive troops."));
+end
+
+rule "14 requirement - bait deck structure"
+salience 70
+when
+    ArchetypeScore(archetype == Archetype.BAIT, score > 0)
+    not DeckRequirementFact(archetype == Archetype.BAIT, code == "BAIT_CORE")
+then
+    insert(new DeckRequirementFact(Archetype.BAIT, CardRole.WIN_CONDITION, 1, 4.0, "BAIT_CORE", "Bait requires a pressure win condition."));
+    insert(new DeckRequirementFact(Archetype.BAIT, CardRole.SWARM, 2, 4.0, "BAIT_SWARM", "Bait requires multiple spell-bait or swarm cards."));
+    insert(new DeckRequirementFact(Archetype.BAIT, CardRole.SMALL_SPELL, 1, 3.0, "BAIT_SMALL_SPELL", "Bait requires a small spell."));
+end
+
+rule "15 requirement - air weakness coverage"
+salience 70
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    not DeckRequirementFact(archetype == $a, code == "AIR_WEAKNESS_ANTI_AIR")
+then
+    insert(new DeckRequirementFact($a, CardRole.ANTI_AIR, 2, 5.0, "AIR_WEAKNESS_ANTI_AIR", "Air weakness requires at least two anti-air cards."));
+    insert(new DeckRequirementFact($a, CardRole.AIR_SUPPORT_COUNTER, 1, 6.0, "AIR_WEAKNESS_SUPPORT_COUNTER", "Air weakness requires an answer to air support."));
+end
+
+rule "16 selection - select cards from inferred requirements"
+salience 65
+when
+    $r : DeckRequirementFact($a : archetype, $role : role, $min : minimumCount)
+    $selectedForRole : Number(intValue < $min) from accumulate(
+        SelectedCardFact(archetype == $a, role == $role),
+        count(1)
+    )
+    $alreadySelected : java.util.List() from collect(SelectedCardFact(archetype == $a))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForRequirement(cards, $r, $alreadySelected);
+    if (card != null) {
+        insert(new SelectedCardFact($r.archetype(), $r.role(), card, $r.reason() + " Selected " + card.name() + "."));
+    }
+end

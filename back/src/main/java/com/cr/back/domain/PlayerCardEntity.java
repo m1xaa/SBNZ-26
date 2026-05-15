@@ -64,4 +64,9 @@ public class PlayerCardEntity {
         this.level = level;
         this.reliablyUsed = reliablyUsed;
     }
+
+    public void updateLevel(int level) {
+        this.unlocked = true;
+        this.level = level;
+    }
 }

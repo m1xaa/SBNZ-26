@@ -2,6 +2,8 @@ package com.cr.back.admin;
 
 import com.cr.back.domain.Archetype;
 import com.cr.back.domain.PlayerEntity;
+import com.cr.back.domain.PlayerPlaystyleEntity;
+import com.cr.back.repository.PlayerPlaystyleRepository;
 import com.cr.back.repository.PlayerRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +22,11 @@ import java.util.Set;
 @RequestMapping("/api/players")
 public class PlayerController {
     private final PlayerRepository playerRepository;
+    private final PlayerPlaystyleRepository playstyleRepository;
 
-    public PlayerController(PlayerRepository playerRepository) {
+    public PlayerController(PlayerRepository playerRepository, PlayerPlaystyleRepository playstyleRepository) {
         this.playerRepository = playerRepository;
+        this.playstyleRepository = playstyleRepository;
     }
 
     @GetMapping
@@ -35,6 +39,7 @@ public class PlayerController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PlayerResponse create(@RequestBody PlayerProfileRequest request) {
+        PlayerPlaystyleEntity playstyle = findPlaystyle(request.preferredPlaystyleId());
         PlayerEntity player = new PlayerEntity(
                 request.username(),
                 request.prefersFastGame(),
@@ -42,8 +47,10 @@ public class PlayerController {
                 request.aggressivePressure(),
                 request.patientGame(),
                 request.maxPreferredAverageElixir(),
+                playstyle,
                 request.preferredArchetype()
         );
+        player.applyPlaystyle(playstyle);
         player.getDislikedCards().addAll(request.dislikedCards());
         return PlayerResponse.from(playerRepository.save(player));
     }
@@ -52,6 +59,7 @@ public class PlayerController {
     public PlayerResponse updateProfile(@PathVariable Long playerId, @RequestBody PlayerProfileRequest request) {
         PlayerEntity player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
+        PlayerPlaystyleEntity playstyle = findPlaystyle(request.preferredPlaystyleId());
         player.updateProfile(
                 request.username(),
                 request.prefersFastGame(),
@@ -59,14 +67,25 @@ public class PlayerController {
                 request.aggressivePressure(),
                 request.patientGame(),
                 request.maxPreferredAverageElixir(),
+                playstyle,
                 request.preferredArchetype(),
                 request.dislikedCards()
         );
+        player.applyPlaystyle(playstyle);
         return PlayerResponse.from(playerRepository.save(player));
+    }
+
+    private PlayerPlaystyleEntity findPlaystyle(Long playstyleId) {
+        if (playstyleId == null) {
+            return null;
+        }
+        return playstyleRepository.findById(playstyleId)
+                .orElseThrow(() -> new IllegalArgumentException("Player playstyle not found: " + playstyleId));
     }
 
     public record PlayerProfileRequest(
             String username,
+            Long preferredPlaystyleId,
             boolean prefersFastGame,
             boolean likesHeavyDecks,
             boolean aggressivePressure,
@@ -88,6 +107,7 @@ public class PlayerController {
             boolean aggressivePressure,
             boolean patientGame,
             double maxPreferredAverageElixir,
+            PlayerPlaystyleResponse preferredPlaystyle,
             Archetype preferredArchetype,
             Set<String> dislikedCards
     ) {
@@ -100,8 +120,28 @@ public class PlayerController {
                     player.isAggressivePressure(),
                     player.isPatientGame(),
                     player.getMaxPreferredAverageElixir(),
+                    PlayerPlaystyleResponse.from(player.getPreferredPlaystyle()),
                     player.getPreferredArchetype(),
                     player.getDislikedCards()
+            );
+        }
+    }
+
+    public record PlayerPlaystyleResponse(
+            Long id,
+            String code,
+            String name,
+            String description
+    ) {
+        static PlayerPlaystyleResponse from(PlayerPlaystyleEntity playstyle) {
+            if (playstyle == null) {
+                return null;
+            }
+            return new PlayerPlaystyleResponse(
+                    playstyle.getId(),
+                    playstyle.getCode(),
+                    playstyle.getName(),
+                    playstyle.getDescription()
             );
         }
     }

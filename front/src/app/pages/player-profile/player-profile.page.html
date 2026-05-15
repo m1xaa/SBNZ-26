@@ -1,0 +1,199 @@
+<main class="profile-page">
+  <section class="profile-hero" aria-labelledby="profile-title">
+    <div>
+      <p class="eyebrow">Admin player profile</p>
+      <h1 id="profile-title">Update player profile</h1>
+      <p class="intro">
+        Choose an existing player, update preferences, and save the profile to the backend.
+      </p>
+    </div>
+    <div class="status-panel">
+      <span class="status-label">{{ modeLabel() }}</span>
+      @if (savedProfile()) {
+        <strong>{{ savedProfile()?.username }}</strong>
+        <span>Saved successfully</span>
+      } @else {
+        <strong>No profile saved yet</strong>
+        <span>Use the form to create or update a player</span>
+      }
+    </div>
+  </section>
+
+  @if (loading()) {
+    <section class="message-band">Loading backend player and option data...</section>
+  } @else {
+    <form class="profile-layout" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+      <section class="form-section">
+        <div class="section-heading">
+          <h2>Profile</h2>
+          <label>
+            Existing player
+            <select [formControl]="playerSelect">
+              <option [ngValue]="'new'">New profile</option>
+              @for (player of players(); track player.id) {
+                <option [ngValue]="player.id">{{ player.username }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            Username
+            <input type="text" formControlName="username" placeholder="Player name" />
+          </label>
+
+          <label>
+            Preferred archetype
+            <select formControlName="preferredArchetype">
+              <option [ngValue]="null">Let backend choose</option>
+              @for (archetype of archetypes; track archetype) {
+                <option [ngValue]="archetype">{{ prettifyArchetype(archetype) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Max average elixir
+            <input type="number" min="1" max="9" step="0.1" formControlName="maxPreferredAverageElixir" />
+          </label>
+
+          <label>
+            Playstyle preset
+            <select formControlName="preferredPlaystyleId">
+              <option [ngValue]="null">Custom preferences</option>
+              @for (playstyle of playstyles(); track playstyle.id) {
+                <option [ngValue]="playstyle.id">{{ playstyle.name }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        @if (selectedPlaystyle()) {
+          <div class="playstyle-summary">
+            <strong>{{ selectedPlaystyle()?.name }}</strong>
+            <p>{{ selectedPlaystyle()?.description }}</p>
+          </div>
+        }
+
+        <fieldset class="preference-grid">
+          <legend>Preference flags</legend>
+          <label>
+            <input type="checkbox" formControlName="prefersFastGame" />
+            Fast game
+          </label>
+          <label>
+            <input type="checkbox" formControlName="likesHeavyDecks" />
+            Heavy decks
+          </label>
+          <label>
+            <input type="checkbox" formControlName="aggressivePressure" />
+            Aggressive pressure
+          </label>
+          <label>
+            <input type="checkbox" formControlName="patientGame" />
+            Patient game
+          </label>
+        </fieldset>
+      </section>
+
+      <section class="form-section">
+        <div class="section-heading">
+          <h2>Disliked cards</h2>
+          <span>{{ profileForm.controls.dislikedCards.value.length }} selected</span>
+        </div>
+
+        <label>
+          Exclude cards from future recommendations
+          <select class="card-select" multiple formControlName="dislikedCards">
+            @for (card of cardOptions(); track card.id) {
+              <option [ngValue]="card.name">{{ card.name }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="selected-cards" aria-label="Selected disliked cards">
+          @for (cardName of profileForm.controls.dislikedCards.value; track cardName) {
+            <span>{{ cardName }}</span>
+          } @empty {
+            <span class="empty-chip">No disliked cards selected</span>
+          }
+        </div>
+      </section>
+
+      <section class="form-section collection-section">
+        <div class="section-heading">
+          <div>
+            <h2>Card collection</h2>
+            <p class="collection-summary">Drag each unlocked card to your current level, 1–16.</p>
+          </div>
+          <span>{{ selectedCollectionCount() }} unlocked</span>
+        </div>
+
+        <div class="collection-scroll" aria-label="Card collection">
+          @for (card of collection(); track card.cardId) {
+            <article class="collection-card">
+              @if (card.image) {
+                <img src="{{ card.image }}" alt="{{ card.name }}" />
+              } @else {
+                <span class="image-placeholder">No image</span>
+              }
+
+              <div class="card-title">
+                <strong>{{ card.name }}</strong>
+                <span class="card-id">#{{ card.cardId }}</span>
+              </div>
+
+              <label class="unlocked-toggle">
+                <input
+                  type="checkbox"
+                  [checked]="card.unlocked"
+                  (change)="toggleCardUnlocked(card, $any($event.target).checked)"
+                />
+                Unlocked
+              </label>
+
+              <label class="level-control">
+                Level {{ card.level }}
+                <input
+                  type="range"
+                  min="1"
+                  max="16"
+                  [disabled]="!card.unlocked"
+                  [value]="card.level"
+                  (input)="updateCardLevel(card, $any($event.target).value)"
+                />
+              </label>
+            </article>
+          }
+        </div>
+
+        <div class="collection-actions">
+          <button type="button" class="secondary-button" (click)="resetCollection()">Reset collection</button>
+          <button
+            type="button"
+            class="primary-button"
+            [disabled]="collectionSaving() || playerSelect.value === 'new'"
+            (click)="saveCollection()"
+          >
+            {{ playerSelect.value === 'new' ? 'Save profile first' : (collectionSaving() ? 'Saving...' : 'Save collection') }}
+          </button>
+        </div>
+      </section>
+
+      @if (errorMessage()) {
+        <div class="alert error">{{ errorMessage() }}</div>
+      }
+      @if (successMessage()) {
+        <div class="alert success">{{ successMessage() }}</div>
+      }
+
+      <div class="actions">
+        <button type="button" class="secondary-button" (click)="resetForm()">Reset</button>
+        <button type="submit" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : modeLabel() }}
+        </button>
+      </div>
+    </form>
+  }
+</main>

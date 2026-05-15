@@ -9,11 +9,13 @@ import com.cr.back.domain.CardType;
 import com.cr.back.domain.DeckValidationRuleEntity;
 import com.cr.back.domain.MatchEventType;
 import com.cr.back.domain.MatchOutcome;
+import com.cr.back.domain.PlayerPlaystyleEntity;
 import com.cr.back.domain.SynergyType;
 import com.cr.back.repository.ArchetypeDefinitionRepository;
 import com.cr.back.repository.CardRepository;
 import com.cr.back.repository.CardSynergyRepository;
 import com.cr.back.repository.DeckValidationRuleRepository;
+import com.cr.back.repository.PlayerPlaystyleRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,17 +38,20 @@ public class StaticKnowledgeController {
     private final DeckValidationRuleRepository validationRuleRepository;
     private final CardSynergyRepository synergyRepository;
     private final CardRepository cardRepository;
+    private final PlayerPlaystyleRepository playstyleRepository;
 
     public StaticKnowledgeController(
             ArchetypeDefinitionRepository archetypeDefinitionRepository,
             DeckValidationRuleRepository validationRuleRepository,
             CardSynergyRepository synergyRepository,
-            CardRepository cardRepository
+            CardRepository cardRepository,
+            PlayerPlaystyleRepository playstyleRepository
     ) {
         this.archetypeDefinitionRepository = archetypeDefinitionRepository;
         this.validationRuleRepository = validationRuleRepository;
         this.synergyRepository = synergyRepository;
         this.cardRepository = cardRepository;
+        this.playstyleRepository = playstyleRepository;
     }
 
     @GetMapping("/options")
@@ -57,8 +62,14 @@ public class StaticKnowledgeController {
                 Arrays.asList(CardType.values()),
                 Arrays.asList(MatchOutcome.values()),
                 Arrays.asList(MatchEventType.values()),
-                Arrays.asList(SynergyType.values())
+                Arrays.asList(SynergyType.values()),
+                playstyleRepository.findAll()
         );
+    }
+
+    @GetMapping("/player-playstyles")
+    public List<PlayerPlaystyleEntity> playerPlaystyles() {
+        return playstyleRepository.findAll();
     }
 
     @GetMapping("/archetypes")
@@ -172,7 +183,8 @@ public class StaticKnowledgeController {
             List<CardType> cardTypes,
             List<MatchOutcome> matchOutcomes,
             List<MatchEventType> matchEventTypes,
-            List<SynergyType> synergyTypes
+            List<SynergyType> synergyTypes,
+            List<PlayerPlaystyleEntity> playerPlaystyles
     ) {
     }
 
