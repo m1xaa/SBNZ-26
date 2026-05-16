@@ -1,22 +1,27 @@
 package rules;
 
-import com.cr.back.domain.card.CardRole;
 import com.cr.back.rules.DeckRulesSupport;
+import com.cr.back.rules.facts.CardFact;
+import com.cr.back.rules.facts.CardPriorityFact;
 import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
 
 global java.util.Collection cards;
 
-rule "31 replacement - suggest alternatives for locked or low cards"
+rule "31 replacement - suggest alternatives for low cards"
 salience 25
 when
-    $d : DeckCandidate()
-    eval(!$d.hasAppliedRule("31"))
+    $d : DeckCandidate($a : archetype)
+    $card : CardFact(level < 10) from $d.getCards()
+    eval(!$d.getAlternatives().containsKey($card.name()))
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a))
 then
-    $d.markRule("31");
-    DeckRulesSupport.suggestAlternativesForLowCards($d, cards);
-    update($d);
+    CardFact alternative = DeckRulesSupport.bestAlternative(cards, $priorities, $a, $card.roles(), $d, $card.name());
+    if (alternative != null) {
+        $d.getAlternatives().put($card.name(), alternative.name());
+        update($d);
+    }
 end
 
 rule "32 correction - insufficient weakness coverage warning"
@@ -25,7 +30,7 @@ when
     PlayerInsight(code == "AIR_WEAKNESS")
     $d : DeckCandidate(valid == true)
     eval(!$d.hasAppliedRule("32"))
-    eval($d.countRole(CardRole.AIR_SUPPORT_COUNTER) < 1)
+    eval($d.countRole(com.cr.back.domain.card.CardRole.AIR_SUPPORT_COUNTER) < 1)
 then
     $d.markRule("32");
     $d.getWarnings().add("Deck is valid, but still has limited dedicated answers to air support.");
@@ -47,11 +52,24 @@ rule "34 replacement - respect explicitly disliked cards"
 salience 30
 when
     $p : PlayerFact()
-    $d : DeckCandidate()
-    eval(!$d.hasAppliedRule("34"))
-    eval(!$p.dislikedCards().isEmpty())
+    $d : DeckCandidate($a : archetype)
+    $card : CardFact() from $d.getCards()
+    eval(!$d.hasAppliedRule("34-" + $card.name()))
+    eval($p.dislikedCards().contains($card.name()))
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a))
 then
-    $d.markRule("34");
-    DeckRulesSupport.replaceDislikedCards($d, cards, $p);
+    $d.markRule("34-" + $card.name());
+    CardFact replacement = DeckRulesSupport.bestAlternative(cards, $priorities, $a, $card.roles(), $d, $card.name());
+    if (replacement != null) {
+        $d.getCards().remove($card);
+        if ($d.addCard(replacement)) {
+            $d.getAlternatives().put($card.name(), replacement.name());
+            $d.addScore(4, "Replaced explicitly disliked card " + $card.name() + " with " + replacement.name() + ".");
+        } else {
+            $d.getWarnings().add("Could not replace disliked card " + $card.name() + " without breaking deck size.");
+        }
+    } else {
+        $d.getWarnings().add("No valid replacement was available for disliked card " + $card.name() + ".");
+    }
     update($d);
 end

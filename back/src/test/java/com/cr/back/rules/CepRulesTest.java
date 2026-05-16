@@ -1,5 +1,6 @@
 package com.cr.back.rules;
 
+import com.cr.back.config.DroolsConfig;
 import com.cr.back.domain.deck.Archetype;
 import com.cr.back.domain.match.MatchEventType;
 import com.cr.back.domain.match.MatchOutcome;
@@ -12,10 +13,10 @@ import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
 import org.drools.core.time.SessionPseudoClock;
 import org.junit.jupiter.api.Test;
-import org.kie.api.KieServices;
 import org.kie.api.runtime.ClassObjectFilter;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
+import org.springframework.core.io.DefaultResourceLoader;
 
 import java.util.Comparator;
 import java.util.List;
@@ -323,7 +324,12 @@ class CepRulesTest {
     }
 
     private KieSession newSession() {
-        KieContainer container = KieServices.Factory.get().getKieClasspathContainer();
+        KieContainer container;
+        try {
+            container = new DroolsConfig().kieContainer(new DefaultResourceLoader());
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to create KIE container for tests.", exception);
+        }
         KieSession session = container.newKieSession("deckRecommendationSession");
         session.setGlobal("cards", List.of());
         return session;

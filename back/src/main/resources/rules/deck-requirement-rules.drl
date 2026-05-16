@@ -1,10 +1,11 @@
 package rules;
 
-import com.cr.back.domain.deck.Archetype;
 import com.cr.back.domain.card.CardRole;
+import com.cr.back.domain.deck.Archetype;
 import com.cr.back.rules.DeckRulesSupport;
 import com.cr.back.rules.facts.ArchetypeScore;
 import com.cr.back.rules.facts.CardFact;
+import com.cr.back.rules.facts.CardPriorityFact;
 import com.cr.back.rules.facts.DeckRequirementFact;
 import com.cr.back.rules.facts.PlayerInsight;
 import com.cr.back.rules.facts.SelectedCardFact;
@@ -20,10 +21,22 @@ then
     insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.WIN_CONDITION, 1, 4.0, "CYCLE_CORE", "Cycle requires a cheap upgraded win condition."));
     insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.SMALL_SPELL, 1, 3.0, "CYCLE_SMALL_SPELL", "Cycle requires a cheap small spell."));
     insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.BUILDING, 1, 5.0, "CYCLE_BUILDING", "Cycle requires a defensive building."));
-    insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.CYCLE, 2, 2.0, "CYCLE_CHEAP_CARDS", "Cycle requires cheap support cards."));
+    insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.CYCLE, 2, 2.5, "CYCLE_CHEAP_CARDS", "Cycle requires cheap support cards."));
 end
 
-rule "13 requirement - beatdown deck structure"
+rule "13 requirement - control deck structure"
+salience 70
+when
+    ArchetypeScore(archetype == Archetype.CONTROL, score > 0)
+    not DeckRequirementFact(archetype == Archetype.CONTROL, code == "CONTROL_CORE")
+then
+    insert(new DeckRequirementFact(Archetype.CONTROL, CardRole.WIN_CONDITION, 1, 5.0, "CONTROL_CORE", "Control requires a stable win condition."));
+    insert(new DeckRequirementFact(Archetype.CONTROL, CardRole.SMALL_SPELL, 1, 3.0, "CONTROL_SMALL_SPELL", "Control requires a small spell."));
+    insert(new DeckRequirementFact(Archetype.CONTROL, CardRole.BIG_SPELL, 1, 6.0, "CONTROL_BIG_SPELL", "Control requires a big spell."));
+    insert(new DeckRequirementFact(Archetype.CONTROL, CardRole.SINGLE_TARGET_DPS, 1, 5.0, "CONTROL_DPS", "Control requires single-target defense."));
+end
+
+rule "14 requirement - beatdown deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.BEATDOWN, score > 0)
@@ -34,7 +47,7 @@ then
     insert(new DeckRequirementFact(Archetype.BEATDOWN, CardRole.BIG_SPELL, 1, 6.0, "BEATDOWN_BIG_SPELL", "Beatdown requires spell support for defensive troops."));
 end
 
-rule "14 requirement - bait deck structure"
+rule "15 requirement - bait deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.BAIT, score > 0)
@@ -43,9 +56,44 @@ then
     insert(new DeckRequirementFact(Archetype.BAIT, CardRole.WIN_CONDITION, 1, 4.0, "BAIT_CORE", "Bait requires a pressure win condition."));
     insert(new DeckRequirementFact(Archetype.BAIT, CardRole.SWARM, 2, 4.0, "BAIT_SWARM", "Bait requires multiple spell-bait or swarm cards."));
     insert(new DeckRequirementFact(Archetype.BAIT, CardRole.SMALL_SPELL, 1, 3.0, "BAIT_SMALL_SPELL", "Bait requires a small spell."));
+    insert(new DeckRequirementFact(Archetype.BAIT, CardRole.PRESSURE, 1, 5.0, "BAIT_PRESSURE", "Bait requires pressure cards that pull out spells."));
 end
 
-rule "15 requirement - air weakness coverage"
+rule "16 requirement - bridge spam deck structure"
+salience 70
+when
+    ArchetypeScore(archetype == Archetype.BRIDGE_SPAM, score > 0)
+    not DeckRequirementFact(archetype == Archetype.BRIDGE_SPAM, code == "BRIDGE_SPAM_CORE")
+then
+    insert(new DeckRequirementFact(Archetype.BRIDGE_SPAM, CardRole.PRESSURE, 2, 5.0, "BRIDGE_SPAM_CORE", "Bridge spam requires repeated pressure threats."));
+    insert(new DeckRequirementFact(Archetype.BRIDGE_SPAM, CardRole.SMALL_SPELL, 1, 3.0, "BRIDGE_SPAM_SMALL_SPELL", "Bridge spam requires a small spell."));
+    insert(new DeckRequirementFact(Archetype.BRIDGE_SPAM, CardRole.SINGLE_TARGET_DPS, 1, 6.0, "BRIDGE_SPAM_DPS", "Bridge spam requires a tank killer."));
+end
+
+rule "17 requirement - siege deck structure"
+salience 70
+when
+    ArchetypeScore(archetype == Archetype.SIEGE, score > 0)
+    not DeckRequirementFact(archetype == Archetype.SIEGE, code == "SIEGE_CORE")
+then
+    insert(new DeckRequirementFact(Archetype.SIEGE, CardRole.SIEGE, 1, 6.0, "SIEGE_CORE", "Siege requires a siege win condition."));
+    insert(new DeckRequirementFact(Archetype.SIEGE, CardRole.SMALL_SPELL, 1, 3.0, "SIEGE_SMALL_SPELL", "Siege requires a small spell."));
+    insert(new DeckRequirementFact(Archetype.SIEGE, CardRole.ANTI_AIR, 1, 5.0, "SIEGE_ANTI_AIR", "Siege requires anti-air support."));
+end
+
+rule "18 requirement - air counter deck structure"
+salience 70
+when
+    ArchetypeScore(archetype == Archetype.AIR_COUNTER, score > 0)
+    not DeckRequirementFact(archetype == Archetype.AIR_COUNTER, code == "AIR_COUNTER_CORE")
+then
+    insert(new DeckRequirementFact(Archetype.AIR_COUNTER, CardRole.WIN_CONDITION, 1, 5.0, "AIR_COUNTER_CORE", "Air counter requires a clear win condition."));
+    insert(new DeckRequirementFact(Archetype.AIR_COUNTER, CardRole.ANTI_AIR, 2, 5.0, "AIR_COUNTER_ANTI_AIR", "Air counter requires layered anti-air."));
+    insert(new DeckRequirementFact(Archetype.AIR_COUNTER, CardRole.AIR_SUPPORT_COUNTER, 1, 6.0, "AIR_COUNTER_SUPPORT_COUNTER", "Air counter requires an answer to air support."));
+    insert(new DeckRequirementFact(Archetype.AIR_COUNTER, CardRole.SMALL_SPELL, 1, 3.0, "AIR_COUNTER_SMALL_SPELL", "Air counter requires a small spell."));
+end
+
+rule "19 requirement - air weakness coverage"
 salience 70
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -56,7 +104,7 @@ then
     insert(new DeckRequirementFact($a, CardRole.AIR_SUPPORT_COUNTER, 1, 6.0, "AIR_WEAKNESS_SUPPORT_COUNTER", "Air weakness requires an answer to air support."));
 end
 
-rule "16 selection - select cards from inferred requirements"
+rule "20 selection - select cards from inferred requirements"
 salience 65
 when
     $r : DeckRequirementFact($a : archetype, $role : role, $min : minimumCount)
@@ -65,8 +113,10 @@ when
         count(1)
     )
     $alreadySelected : java.util.List() from collect(SelectedCardFact(archetype == $a))
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == $role))
+    eval(DeckRulesSupport.hasAvailableForRequirement(cards, $priorities, $r, $alreadySelected))
 then
-    CardFact card = DeckRulesSupport.bestAvailableForRequirement(cards, $r, $alreadySelected);
+    CardFact card = DeckRulesSupport.bestAvailableForRequirement(cards, $priorities, $r, $alreadySelected);
     if (card != null) {
         insert(new SelectedCardFact($r.archetype(), $r.role(), card, $r.reason() + " Selected " + card.name() + "."));
     }

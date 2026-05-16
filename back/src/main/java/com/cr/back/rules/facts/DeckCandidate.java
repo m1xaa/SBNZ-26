@@ -110,4 +110,20 @@ public class DeckCandidate {
     public void markRule(String rule) {
         appliedRules.add(rule);
     }
+
+    public boolean betterThan(DeckCandidate other) {
+        if (other == null) {
+            return true;
+        }
+        if (valid != other.valid) {
+            return valid;
+        }
+        if (score != other.score) {
+            return score > other.score;
+        }
+        if (keyLevelSum() != other.keyLevelSum()) {
+            return keyLevelSum() > other.keyLevelSum();
+        }
+        return averageElixir() < other.averageElixir();
+    }
 }

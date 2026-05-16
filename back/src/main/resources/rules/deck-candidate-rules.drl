@@ -1,106 +1,278 @@
 package rules;
 
-import com.cr.back.domain.deck.Archetype;
 import com.cr.back.domain.card.CardRole;
+import com.cr.back.domain.deck.Archetype;
 import com.cr.back.rules.DeckRulesSupport;
 import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.CardFact;
+import com.cr.back.rules.facts.CardPriorityFact;
 import com.cr.back.rules.facts.DeckCandidate;
-import com.cr.back.rules.facts.DeckRequirementFact;
 import com.cr.back.rules.facts.PlayerInsight;
 import com.cr.back.rules.facts.SelectedCardFact;
 
 global java.util.Collection cards;
 
-rule "12 form - cycle candidate"
+rule "12 form - create candidate from positive archetype and selected core"
 salience 60
 when
-    $s : ArchetypeScore(archetype == Archetype.CYCLE, score > 0)
-    DeckRequirementFact(archetype == Archetype.CYCLE, role == CardRole.WIN_CONDITION)
-    SelectedCardFact(archetype == Archetype.CYCLE, role == CardRole.WIN_CONDITION)
-    $selected : java.util.List() from collect(SelectedCardFact(archetype == Archetype.CYCLE))
-    not DeckCandidate(archetype == Archetype.CYCLE)
-    eval(DeckRulesSupport.hasHighLevelRole(cards, CardRole.WIN_CONDITION, 10))
+    $selected : SelectedCardFact($a : archetype)
+    $s : ArchetypeScore(archetype == $a, score > 0)
+    not DeckCandidate(archetype == $a)
 then
-    DeckCandidate deck = new DeckCandidate(Archetype.CYCLE);
-    DeckRulesSupport.addSelectedCards(deck, $selected);
-    DeckRulesSupport.buildDeck(deck, cards);
-    deck.addScore($s.getScore(), "Cycle candidate formed around fast pressure and low elixir.");
+    DeckCandidate deck = new DeckCandidate($a);
+    deck.addScore($s.getScore(), "Candidate created after Drools inferred a viable archetype and core card set.");
     insert(deck);
 end
 
-rule "13 form - beatdown candidate"
-salience 60
-when
-    $s : ArchetypeScore(archetype == Archetype.BEATDOWN, score > 0)
-    DeckRequirementFact(archetype == Archetype.BEATDOWN, role == CardRole.TANK)
-    SelectedCardFact(archetype == Archetype.BEATDOWN, role == CardRole.TANK)
-    $selected : java.util.List() from collect(SelectedCardFact(archetype == Archetype.BEATDOWN))
-    not DeckCandidate(archetype == Archetype.BEATDOWN)
-    eval(DeckRulesSupport.hasHighLevelRole(cards, CardRole.TANK, 10))
-then
-    DeckCandidate deck = new DeckCandidate(Archetype.BEATDOWN);
-    DeckRulesSupport.addSelectedCards(deck, $selected);
-    DeckRulesSupport.buildDeck(deck, cards);
-    deck.addScore($s.getScore(), "Beatdown candidate formed around a tank and support push.");
-    insert(deck);
-end
-
-rule "14 form - bait candidate"
-salience 60
-when
-    $s : ArchetypeScore(archetype == Archetype.BAIT, score > 0)
-    DeckRequirementFact(archetype == Archetype.BAIT, role == CardRole.WIN_CONDITION)
-    SelectedCardFact(archetype == Archetype.BAIT, role == CardRole.WIN_CONDITION)
-    $selected : java.util.List() from collect(SelectedCardFact(archetype == Archetype.BAIT))
-    not DeckCandidate(archetype == Archetype.BAIT)
-    eval(DeckRulesSupport.hasMultipleSpellBaitCards(cards))
-then
-    DeckCandidate deck = new DeckCandidate(Archetype.BAIT);
-    DeckRulesSupport.addSelectedCards(deck, $selected);
-    DeckRulesSupport.buildDeck(deck, cards);
-    deck.addScore($s.getScore(), "Bait candidate formed around cards that pressure the same opponent responses.");
-    insert(deck);
-end
-
-rule "15 form - air counter candidate"
-salience 60
-when
-    PlayerInsight(code == "AIR_WEAKNESS")
-    $s : ArchetypeScore(archetype == Archetype.AIR_COUNTER, score > 0)
-    DeckRequirementFact(archetype == Archetype.AIR_COUNTER, role == CardRole.ANTI_AIR)
-    SelectedCardFact(archetype == Archetype.AIR_COUNTER, role == CardRole.ANTI_AIR)
-    $selected : java.util.List() from collect(SelectedCardFact(archetype == Archetype.AIR_COUNTER))
-    not DeckCandidate(archetype == Archetype.AIR_COUNTER)
-    eval(DeckRulesSupport.hasHighLevelRole(cards, CardRole.ANTI_AIR, 10))
-then
-    DeckCandidate deck = new DeckCandidate(Archetype.AIR_COUNTER);
-    DeckRulesSupport.addSelectedCards(deck, $selected);
-    DeckRulesSupport.buildDeck(deck, cards);
-    deck.addScore($s.getScore(), "Air-counter candidate formed to cover repeated air-archetype losses.");
-    insert(deck);
-end
-
-rule "16 correction - air weakness adds anti-air"
-salience 55
-when
-    PlayerInsight(code == "AIR_WEAKNESS")
-    $d : DeckCandidate()
-    eval(!$d.hasAppliedRule("16"))
-then
-    $d.markRule("16");
-    DeckRulesSupport.addExtraAntiAir($d, cards);
-    $d.addScore(10, "Air weakness corrected with reinforced anti-air support.");
-    update($d);
-end
-
-rule "17 fallback - build candidate from any viable archetype score"
-salience 50
+rule "12a form - fallback candidate from positive archetype score"
+salience 57
 when
     $s : ArchetypeScore(score > 0, $a : archetype)
     not DeckCandidate(archetype == $a)
 then
     DeckCandidate deck = new DeckCandidate($a);
-    DeckRulesSupport.buildDeck(deck, cards);
-    deck.addScore($s.getScore(), "Fallback candidate formed from the best available unlocked cards for this archetype.");
+    deck.addScore($s.getScore(), "Fallback candidate created from a viable archetype score so Drools can continue filling the deck.");
     insert(deck);
+end
+
+rule "13 form - attach selected cards to candidate"
+salience 58
+when
+    $selected : SelectedCardFact($a : archetype, $card : card, $reason : reason)
+    $d : DeckCandidate(archetype == $a)
+    eval(!$d.contains($card.name()))
+    eval($d.getCards().size() < 8)
+then
+    if ($d.addCard($card)) {
+        $d.addScore(2, $reason);
+        update($d);
+    }
+end
+
+rule "14 fill - ensure one win condition"
+salience 56
+when
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($d.countRole(CardRole.WIN_CONDITION) == 0)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.WIN_CONDITION))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.WIN_CONDITION, 9.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.WIN_CONDITION, 9.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(4, "Filled the win-condition slot from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "15 fill - cycle/control wants a small spell"
+salience 56
+when
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval(!$d.hasRole(CardRole.SMALL_SPELL))
+    eval($a == Archetype.CYCLE || $a == Archetype.CONTROL || $a == Archetype.BAIT || $a == Archetype.BRIDGE_SPAM || $a == Archetype.SIEGE || $a == Archetype.AIR_COUNTER)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.SMALL_SPELL))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.SMALL_SPELL, 3.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.SMALL_SPELL, 3.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Filled the small-spell slot from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "16 fill - cycle wants a building"
+salience 56
+when
+    $d : DeckCandidate(archetype == Archetype.CYCLE, valid == true)
+    eval($d.getCards().size() < 8)
+    eval(!$d.hasRole(CardRole.BUILDING))
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == Archetype.CYCLE, role == CardRole.BUILDING))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, Archetype.CYCLE, CardRole.BUILDING, 5.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, Archetype.CYCLE, CardRole.BUILDING, 5.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Filled the defensive building slot from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "17 fill - add first anti-air answer"
+salience 56
+when
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($d.countRole(CardRole.ANTI_AIR) == 0)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.ANTI_AIR))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.ANTI_AIR, 5.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.ANTI_AIR, 5.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Filled missing anti-air coverage from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "17a fill - add second anti-air answer for air weakness"
+salience 56
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($d.countRole(CardRole.ANTI_AIR) < 2)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.ANTI_AIR))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.ANTI_AIR, 5.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.ANTI_AIR, 5.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Added additional anti-air coverage because air weakness was detected.");
+        update($d);
+    }
+end
+
+rule "18 fill - add air support counter when weakness exists"
+salience 56
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($d.countRole(CardRole.AIR_SUPPORT_COUNTER) < 1)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.AIR_SUPPORT_COUNTER))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.AIR_SUPPORT_COUNTER, 6.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.AIR_SUPPORT_COUNTER, 6.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Added a dedicated answer to air support from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "19 fill - control and bridge spam need tank-killer coverage"
+salience 56
+when
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval(!$d.hasRole(CardRole.SINGLE_TARGET_DPS))
+    eval($a == Archetype.CONTROL || $a == Archetype.BRIDGE_SPAM || $a == Archetype.BEATDOWN)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.SINGLE_TARGET_DPS))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.SINGLE_TARGET_DPS, 6.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.SINGLE_TARGET_DPS, 6.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Added single-target defense from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "20 fill - beatdown needs support"
+salience 56
+when
+    $d : DeckCandidate(archetype == Archetype.BEATDOWN, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($d.countRole(CardRole.SUPPORT) < 1)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == Archetype.BEATDOWN, role == CardRole.SUPPORT))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, Archetype.BEATDOWN, CardRole.SUPPORT, 5.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, Archetype.BEATDOWN, CardRole.SUPPORT, 5.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Added beatdown support from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "21 fill - beatdown/control wants a big spell"
+salience 56
+when
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval(!$d.hasRole(CardRole.BIG_SPELL))
+    eval($a == Archetype.BEATDOWN || $a == Archetype.CONTROL)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.BIG_SPELL))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.BIG_SPELL, 6.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.BIG_SPELL, 6.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Added big-spell support from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "22 fill - bait wants at least two swarm cards"
+salience 56
+when
+    $d : DeckCandidate(archetype == Archetype.BAIT, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($d.countRole(CardRole.SWARM) < 2)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == Archetype.BAIT, role == CardRole.SWARM))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, Archetype.BAIT, CardRole.SWARM, 4.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, Archetype.BAIT, CardRole.SWARM, 4.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Added bait support from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "23 fill - bridge spam wants multiple pressure cards"
+salience 56
+when
+    $d : DeckCandidate(archetype == Archetype.BRIDGE_SPAM, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($d.countRole(CardRole.PRESSURE) < 2)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == Archetype.BRIDGE_SPAM, role == CardRole.PRESSURE))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, Archetype.BRIDGE_SPAM, CardRole.PRESSURE, 5.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, Archetype.BRIDGE_SPAM, CardRole.PRESSURE, 5.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(3, "Added bridge-spam pressure from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "24 fill - siege wants siege card"
+salience 56
+when
+    $d : DeckCandidate(archetype == Archetype.SIEGE, valid == true)
+    eval($d.getCards().size() < 8)
+    eval(!$d.hasRole(CardRole.SIEGE))
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == Archetype.SIEGE, role == CardRole.SIEGE))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, Archetype.SIEGE, CardRole.SIEGE, 6.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, Archetype.SIEGE, CardRole.SIEGE, 6.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(4, "Added a siege win condition from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "25 fill - generic support filler"
+salience 52
+when
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.SUPPORT))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.SUPPORT, 9.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.SUPPORT, 9.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(2, "Filled an open support slot from Drools priorities.");
+        update($d);
+    }
+end
+
+rule "26 fill - cycle filler for low-elixir decks"
+salience 51
+when
+    $d : DeckCandidate($a : archetype, valid == true)
+    eval($d.getCards().size() < 8)
+    eval($a == Archetype.CYCLE || $a == Archetype.CONTROL)
+    $priorities : java.util.List() from collect(CardPriorityFact(archetype == $a, role == CardRole.CYCLE))
+    eval(DeckRulesSupport.hasAvailableForDeck(cards, $priorities, $a, CardRole.CYCLE, 3.0, $d))
+then
+    CardFact card = DeckRulesSupport.bestAvailableForDeck(cards, $priorities, $a, CardRole.CYCLE, 3.0, $d);
+    if (card != null && $d.addCard(card)) {
+        $d.addScore(2, "Filled a cheap cycle slot from Drools priorities.");
+        update($d);
+    }
 end

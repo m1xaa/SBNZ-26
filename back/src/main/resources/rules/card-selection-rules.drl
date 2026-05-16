@@ -1,78 +1,292 @@
 package rules;
 
 import com.cr.back.domain.card.CardRole;
+import com.cr.back.domain.deck.Archetype;
+import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.CardFact;
+import com.cr.back.rules.facts.CardPriorityFact;
 import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.DeckRequirementFact;
+import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
 
-rule "25 card choice - high-level win condition anchors cycle"
+rule "20a priority - base required role score"
+salience 68
+when
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    $r : DeckRequirementFact(archetype == $a, $role : role, $max : maxElixir)
+    $card : CardFact(unlocked == true, elixirCost <= $max)
+    eval($card.hasRole($role))
+    not CardPriorityFact(archetype == $a, role == $role, cardName == $card.name(), reason == "BASE_ROLE")
+then
+    insert(new CardPriorityFact($a, $role, $card.name(), $card.level() * 10, "BASE_ROLE"));
+end
+
+rule "20b priority - preferred archetype likes named core"
+salience 68
+when
+    $player : PlayerFact(preferredArchetype != null, $preferred : preferredArchetype)
+    $requirement : DeckRequirementFact(archetype == $preferred, $role : role, $max : maxElixir)
+    $card : CardFact(unlocked == true, elixirCost <= $max)
+    eval($card.hasRole($role))
+    not CardPriorityFact(archetype == $preferred, role == $role, cardName == $card.name(), reason == "PLAYER_PREFERENCE")
+then
+    insert(new CardPriorityFact($preferred, $role, $card.name(), 8, "PLAYER_PREFERENCE"));
+end
+
+rule "20c priority - disliked cards are strongly penalized"
+salience 69
+when
+    $player : PlayerFact()
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    $r : DeckRequirementFact(archetype == $a, $role : role, $max : maxElixir)
+    $card : CardFact(unlocked == true, elixirCost <= $max)
+    eval($card.hasRole($role))
+    eval($player.dislikedCards().contains($card.name()))
+    not CardPriorityFact(archetype == $a, role == $role, cardName == $card.name(), reason == "DISLIKED_CARD")
+then
+    insert(new CardPriorityFact($a, $role, $card.name(), -1000, "DISLIKED_CARD"));
+end
+
+rule "21 priority - cycle win condition prefers cheap pressure"
+salience 68
+when
+    DeckRequirementFact(archetype == Archetype.CYCLE, role == CardRole.WIN_CONDITION, $max : maxElixir)
+    $card : CardFact(unlocked == true, elixirCost <= $max)
+    eval($card.hasRole(CardRole.WIN_CONDITION) && ($card.hasRole(CardRole.PRESSURE) || $card.hasRole(CardRole.CYCLE)))
+    not CardPriorityFact(archetype == Archetype.CYCLE, role == CardRole.WIN_CONDITION, cardName == $card.name(), reason == "CYCLE_WIN_CONDITION")
+then
+    insert(new CardPriorityFact(Archetype.CYCLE, CardRole.WIN_CONDITION, $card.name(), 35, "CYCLE_WIN_CONDITION"));
+end
+
+rule "22 priority - cycle support prefers the cheapest cards"
+salience 68
+when
+    DeckRequirementFact(archetype == Archetype.CYCLE, role == CardRole.CYCLE)
+    $card : CardFact(unlocked == true, elixirCost <= 2.5, roles contains CardRole.CYCLE)
+    not CardPriorityFact(archetype == Archetype.CYCLE, role == CardRole.CYCLE, cardName == $card.name(), reason == "CYCLE_FILLER")
+then
+    insert(new CardPriorityFact(Archetype.CYCLE, CardRole.CYCLE, $card.name(), 25, "CYCLE_FILLER"));
+end
+
+rule "23 priority - control prefers flexible defense"
+salience 68
+when
+    DeckRequirementFact(archetype == Archetype.CONTROL, $role : role)
+    $card : CardFact(unlocked == true)
+    eval(
+        ($role == CardRole.SINGLE_TARGET_DPS && $card.hasRole(CardRole.SINGLE_TARGET_DPS))
+        || ($role == CardRole.BIG_SPELL && $card.hasRole(CardRole.BIG_SPELL))
+        || ($role == CardRole.WIN_CONDITION && $card.hasRole(CardRole.WIN_CONDITION))
+    )
+    not CardPriorityFact(archetype == Archetype.CONTROL, role == $role, cardName == $card.name(), reason == "CONTROL_ROLE")
+then
+    insert(new CardPriorityFact(Archetype.CONTROL, $role, $card.name(), 18, "CONTROL_ROLE"));
+end
+
+rule "24 priority - beatdown prioritizes tanks"
+salience 68
+when
+    DeckRequirementFact(archetype == Archetype.BEATDOWN, role == CardRole.TANK)
+    $card : CardFact(unlocked == true, roles contains CardRole.TANK)
+    not CardPriorityFact(archetype == Archetype.BEATDOWN, role == CardRole.TANK, cardName == $card.name(), reason == "BEATDOWN_TANK")
+then
+    insert(new CardPriorityFact(Archetype.BEATDOWN, CardRole.TANK, $card.name(), 30, "BEATDOWN_TANK"));
+end
+
+rule "25 priority - golem is signature beatdown tank"
+salience 68
+when
+    $card : CardFact(unlocked == true, name == "Golem")
+    not CardPriorityFact(archetype == Archetype.BEATDOWN, role == CardRole.TANK, cardName == "Golem", reason == "GOLEM_CORE")
+then
+    insert(new CardPriorityFact(Archetype.BEATDOWN, CardRole.TANK, $card.name(), 40, "GOLEM_CORE"));
+end
+
+rule "25a priority - night witch is premium beatdown support"
+salience 68
+when
+    $card : CardFact(unlocked == true, name == "Night Witch")
+    not CardPriorityFact(archetype == Archetype.BEATDOWN, role == CardRole.SUPPORT, cardName == "Night Witch", reason == "GOLEM_SUPPORT")
+then
+    insert(new CardPriorityFact(Archetype.BEATDOWN, CardRole.SUPPORT, $card.name(), 25, "GOLEM_SUPPORT"));
+end
+
+rule "26 priority - bait favors goblin barrel and princess"
+salience 68
+when
+    $card : CardFact(unlocked == true, name == "Goblin Barrel" || name == "Princess")
+    not CardPriorityFact(archetype == Archetype.BAIT, cardName == $card.name(), reason == "BAIT_SIGNATURE")
+then
+    if ($card.name().equals("Goblin Barrel")) {
+        insert(new CardPriorityFact(Archetype.BAIT, CardRole.WIN_CONDITION, $card.name(), 40, "BAIT_SIGNATURE"));
+        insert(new CardPriorityFact(Archetype.BAIT, CardRole.PRESSURE, $card.name(), 15, "BAIT_SIGNATURE"));
+    } else {
+        insert(new CardPriorityFact(Archetype.BAIT, CardRole.SWARM, $card.name(), 20, "BAIT_SIGNATURE"));
+        insert(new CardPriorityFact(Archetype.BAIT, CardRole.PRESSURE, $card.name(), 20, "BAIT_SIGNATURE"));
+    }
+end
+
+rule "27 priority - bait swarm cards"
+salience 68
+when
+    DeckRequirementFact(archetype == Archetype.BAIT, role == CardRole.SWARM)
+    $card : CardFact(unlocked == true, roles contains CardRole.SWARM)
+    not CardPriorityFact(archetype == Archetype.BAIT, role == CardRole.SWARM, cardName == $card.name(), reason == "BAIT_SWARM")
+then
+    insert(new CardPriorityFact(Archetype.BAIT, CardRole.SWARM, $card.name(), 22, "BAIT_SWARM"));
+end
+
+rule "28 priority - bridge spam pressure cards"
+salience 68
+when
+    DeckRequirementFact(archetype == Archetype.BRIDGE_SPAM, role == CardRole.PRESSURE)
+    $card : CardFact(unlocked == true, roles contains CardRole.PRESSURE)
+    not CardPriorityFact(archetype == Archetype.BRIDGE_SPAM, role == CardRole.PRESSURE, cardName == $card.name(), reason == "BRIDGE_PRESSURE")
+then
+    insert(new CardPriorityFact(Archetype.BRIDGE_SPAM, CardRole.PRESSURE, $card.name(), 25, "BRIDGE_PRESSURE"));
+end
+
+rule "29 priority - battle ram is signature bridge spam pressure"
+salience 68
+when
+    $card : CardFact(unlocked == true, name == "Battle Ram")
+    not CardPriorityFact(archetype == Archetype.BRIDGE_SPAM, role == CardRole.PRESSURE, cardName == "Battle Ram", reason == "BATTLE_RAM_SIGNATURE")
+then
+    insert(new CardPriorityFact(Archetype.BRIDGE_SPAM, CardRole.PRESSURE, $card.name(), 35, "BATTLE_RAM_SIGNATURE"));
+end
+
+rule "30 priority - siege prefers X-Bow and Mortar"
+salience 68
+when
+    $card : CardFact(unlocked == true, name == "X-Bow" || name == "Mortar")
+    not CardPriorityFact(archetype == Archetype.SIEGE, role == CardRole.SIEGE, cardName == $card.name(), reason == "SIEGE_SIGNATURE")
+then
+    insert(new CardPriorityFact(Archetype.SIEGE, CardRole.SIEGE, $card.name(), 35, "SIEGE_SIGNATURE"));
+end
+
+rule "31a priority - air weakness favors anti-air in cycle/control/air-counter"
+salience 68
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $card : CardFact(unlocked == true, roles contains CardRole.ANTI_AIR)
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    eval($a == Archetype.CYCLE || $a == Archetype.CONTROL || $a == Archetype.AIR_COUNTER)
+    not CardPriorityFact(archetype == $a, role == CardRole.ANTI_AIR, cardName == $card.name(), reason == "AIR_WEAKNESS_ANTI_AIR")
+then
+    insert(new CardPriorityFact($a, CardRole.ANTI_AIR, $card.name(), 24, "AIR_WEAKNESS_ANTI_AIR"));
+end
+
+rule "31b priority - firecracker musketeer baby dragon answer air losses best"
+salience 68
+when
+    PlayerInsight(code == "AIR_WEAKNESS")
+    $card : CardFact(unlocked == true, name == "Firecracker" || name == "Musketeer" || name == "Baby Dragon")
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    not CardPriorityFact(archetype == $a, role == CardRole.ANTI_AIR, cardName == $card.name(), reason == "AIR_SIGNATURE")
+then
+    insert(new CardPriorityFact($a, CardRole.ANTI_AIR, $card.name(), 20, "AIR_SIGNATURE"));
+    insert(new CardPriorityFact($a, CardRole.AIR_SUPPORT_COUNTER, $card.name(), 14, "AIR_SIGNATURE"));
+end
+
+rule "31c priority - hog package is strong cycle core"
+salience 68
+when
+    $card : CardFact(
+        unlocked == true,
+        name == "Hog Rider"
+        || name == "Earthquake"
+        || name == "Cannon"
+        || name == "Firecracker"
+        || name == "Ice Spirit"
+        || name == "Skeletons"
+        || name == "The Log"
+    )
+    not CardPriorityFact(archetype == Archetype.CYCLE, cardName == $card.name(), reason == "HOG_CYCLE_CORE")
+then
+    if ($card.name().equals("Hog Rider")) {
+        insert(new CardPriorityFact(Archetype.CYCLE, CardRole.WIN_CONDITION, $card.name(), 45, "HOG_CYCLE_CORE"));
+    } else if ($card.name().equals("Earthquake") || $card.name().equals("The Log")) {
+        insert(new CardPriorityFact(Archetype.CYCLE, CardRole.SMALL_SPELL, $card.name(), 18, "HOG_CYCLE_CORE"));
+    } else if ($card.name().equals("Cannon")) {
+        insert(new CardPriorityFact(Archetype.CYCLE, CardRole.BUILDING, $card.name(), 20, "HOG_CYCLE_CORE"));
+    } else if ($card.name().equals("Firecracker")) {
+        insert(new CardPriorityFact(Archetype.CYCLE, CardRole.ANTI_AIR, $card.name(), 18, "HOG_CYCLE_CORE"));
+        insert(new CardPriorityFact(Archetype.CYCLE, CardRole.SUPPORT, $card.name(), 14, "HOG_CYCLE_CORE"));
+    } else {
+        insert(new CardPriorityFact(Archetype.CYCLE, CardRole.CYCLE, $card.name(), 15, "HOG_CYCLE_CORE"));
+    }
+end
+
+rule "35 card choice - high-level win condition anchors cycle"
 salience 35
 when
     $d : DeckCandidate(valid == true)
-    eval(!$d.hasAppliedRule("25"))
+    eval(!$d.hasAppliedRule("35"))
     eval($d.countRole(CardRole.WIN_CONDITION) == 1)
 then
-    $d.markRule("25");
+    $d.markRule("35");
     $d.addScore(18, "A high-level win condition anchors the selected archetype.");
     update($d);
 end
 
-rule "26 card choice - defensive building selected"
+rule "36 card choice - defensive building selected"
 salience 35
 when
     $d : DeckCandidate(valid == true)
-    eval(!$d.hasAppliedRule("26"))
+    eval(!$d.hasAppliedRule("36"))
     eval($d.hasRole(CardRole.BUILDING))
 then
-    $d.markRule("26");
+    $d.markRule("36");
     $d.addScore(8, "A defensive building is available and fits the deck structure.");
     update($d);
 end
 
-rule "27 card choice - strong anti-air support selected"
+rule "37 card choice - strong anti-air support selected"
 salience 35
 when
     PlayerInsight(code == "AIR_WEAKNESS")
     $d : DeckCandidate(valid == true)
-    eval(!$d.hasAppliedRule("27"))
+    eval(!$d.hasAppliedRule("37"))
     eval($d.contains("Firecracker") || $d.contains("Musketeer") || $d.contains("Baby Dragon"))
 then
-    $d.markRule("27");
+    $d.markRule("37");
     $d.addScore(12, "High-level anti-air support was prioritized because of the air weakness.");
     update($d);
 end
 
-rule "28 card choice - compatible small spell selected"
+rule "38 card choice - compatible small spell selected"
 salience 35
 when
     $d : DeckCandidate(valid == true)
-    eval(!$d.hasAppliedRule("28"))
+    eval(!$d.hasAppliedRule("38"))
     eval($d.hasRole(CardRole.SMALL_SPELL))
 then
-    $d.markRule("28");
+    $d.markRule("38");
     $d.addScore(8, "A small spell is included for cheap answers and cycle consistency.");
     update($d);
 end
 
-rule "29 card choice - cheap reliable support selected"
+rule "39 card choice - cheap reliable support selected"
 salience 35
 when
     $d : DeckCandidate(valid == true)
-    eval(!$d.hasAppliedRule("29"))
+    eval(!$d.hasAppliedRule("39"))
     eval($d.countRole(CardRole.CYCLE) >= 2)
 then
-    $d.markRule("29");
+    $d.markRule("39");
     $d.addScore(7, "Cheap cycle cards fill support slots without raising average elixir.");
     update($d);
 end
 
-rule "30 card choice - synergy with win condition"
+rule "40 card choice - synergy with win condition"
 salience 35
 when
     $d : DeckCandidate(valid == true)
-    eval(!$d.hasAppliedRule("30"))
+    eval(!$d.hasAppliedRule("40"))
     eval(($d.contains("Hog Rider") && $d.contains("Earthquake")) || ($d.contains("Golem") && $d.contains("Night Witch")))
 then
-    $d.markRule("30");
+    $d.markRule("40");
     $d.addScore(12, "Selected support has strong synergy with the main win condition.");
     update($d);
 end

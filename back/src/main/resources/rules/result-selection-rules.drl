@@ -1,0 +1,28 @@
+package rules;
+
+import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.DeckRecommendationResult;
+
+rule "40 result - select strongest valid candidate"
+salience 10
+when
+    $result : DeckRecommendationResult()
+    $candidate : DeckCandidate(valid == true)
+    not DeckCandidate(this != $candidate, valid == true, eval(this.betterThan($candidate)))
+    eval($result.getBestCandidate() != $candidate)
+then
+    $result.select($candidate);
+    update($result);
+end
+
+rule "41 result - fallback to strongest invalid candidate"
+salience 9
+when
+    $result : DeckRecommendationResult(bestCandidate == null)
+    not DeckCandidate(valid == true)
+    $candidate : DeckCandidate()
+    not DeckCandidate(this != $candidate, eval(this.betterThan($candidate)))
+then
+    $result.select($candidate);
+    update($result);
+end

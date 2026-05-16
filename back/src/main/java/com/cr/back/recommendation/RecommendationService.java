@@ -17,6 +17,7 @@ import com.cr.back.recommendation.dto.RecommendedCardResponse;
 import com.cr.back.rules.facts.ArchetypeScore;
 import com.cr.back.rules.facts.CardFact;
 import com.cr.back.rules.facts.DeckCandidate;
+import com.cr.back.rules.facts.DeckRecommendationResult;
 import com.cr.back.rules.facts.MatchEventFact;
 import com.cr.back.rules.facts.MatchFact;
 import com.cr.back.rules.facts.PlayerFact;
@@ -82,7 +83,9 @@ public class RecommendationService {
 
         KieSession session = kieSessionProvider.getObject();
         try {
+            DeckRecommendationResult result = new DeckRecommendationResult();
             session.setGlobal("cards", cardFacts);
+            session.insert(result);
             session.insert(toPlayerFact(player));
             for (Archetype archetype : Archetype.values()) {
                 session.insert(new ArchetypeScore(archetype));
@@ -91,23 +94,14 @@ public class RecommendationService {
             replayHistoricalFacts(session, matchFacts, eventFacts);
             session.fireAllRules();
 
+            DeckCandidate best = result.getBestCandidate();
+            if (best == null) {
+                throw new IllegalStateException("No deck candidate could be produced. Check unlocked cards and Drools rules.");
+            }
+
             List<PlayerInsight> insights = session.getObjects(object -> object instanceof PlayerInsight).stream()
                     .map(PlayerInsight.class::cast)
                     .toList();
-            List<DeckCandidate> candidates = session.getObjects(object -> object instanceof DeckCandidate).stream()
-                    .map(DeckCandidate.class::cast)
-                    .toList();
-
-            Comparator<DeckCandidate> candidateComparator = Comparator.comparingInt(DeckCandidate::getScore)
-                    .thenComparing(DeckCandidate::keyLevelSum)
-                    .thenComparing(candidate -> -candidate.averageElixir());
-
-            DeckCandidate best = candidates.stream()
-                    .filter(DeckCandidate::isValid)
-                    .max(candidateComparator)
-                    .orElseGet(() -> candidates.stream()
-                            .max(candidateComparator)
-                            .orElseThrow(() -> new IllegalStateException("No deck candidate could be produced. Check unlocked cards and Drools scoring rules.")));
 
             List<String> warnings = new ArrayList<>(best.getWarnings());
             if (!best.isValid()) {
