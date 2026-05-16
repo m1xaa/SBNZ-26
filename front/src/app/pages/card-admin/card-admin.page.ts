@@ -4,7 +4,7 @@ import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Va
 import { forkJoin, finalize } from 'rxjs';
 import { CardService } from '../../services/card.service';
 import { CardRequest, CardResponse, CardRole, CardType } from '../../models/card.model';
-import { CardOption } from '../../models/player-profile.model';
+import { CardOption, PlaystyleOption } from '../../models/player-profile.model';
 import { SelectionOptionsService } from '../../services/selection-options.service';
 
 const CARD_TYPES: CardType[] = ['GROUND_TROOP', 'AIR_TROOP', 'SPELL', 'BUILDING'];
@@ -41,6 +41,8 @@ export class CardAdminPage implements OnInit {
   protected readonly cardRoles = CARD_ROLES;
   protected readonly cards = signal<CardResponse[]>([]);
   protected readonly selectedCard = signal<CardResponse | null>(null);
+  protected readonly imagePreview = signal<string | null>(null);
+  protected readonly imageBase64 = signal<string | null>(null);
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -54,7 +56,7 @@ export class CardAdminPage implements OnInit {
   }> = this.formBuilder.group({
     name: ['', [Validators.required, Validators.maxLength(80)]],
     elixirCost: [1, [Validators.required, Validators.min(0.5), Validators.max(10)]],
-    type: new FormControl<CardType | null>(null),
+    type: new FormControl<CardType | null>(null, [Validators.required]),
     roles: this.formBuilder.control<CardRole[]>([])
   });
 
@@ -70,6 +72,8 @@ export class CardAdminPage implements OnInit {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.selectedCard.set(card);
+    this.imagePreview.set(card.image);
+    this.imageBase64.set(null);
     this.cardForm.reset({
       name: card.name,
       elixirCost: card.elixirCost,
@@ -82,6 +86,8 @@ export class CardAdminPage implements OnInit {
     this.selectedCard.set(null);
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    this.imagePreview.set(null);
+    this.imageBase64.set(null);
     this.cardForm.reset({
       name: '',
       elixirCost: 1,
@@ -96,7 +102,7 @@ export class CardAdminPage implements OnInit {
 
     if (this.cardForm.invalid) {
       this.cardForm.markAllAsTouched();
-      this.errorMessage.set('Please complete the card form before saving.');
+      this.errorMessage.set(this.getCardFormValidationMessage());
       return;
     }
 
@@ -126,7 +132,10 @@ export class CardAdminPage implements OnInit {
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ cards, cardOptions }) => this.cards.set(this.mergeImages(cards, cardOptions)),
+        next: ({ cards, cardOptions }) => {
+          console.log(cards.find(c => c.imageAssetId === 122)); 
+          this.cards.set(this.mergeImages(cards, cardOptions))
+        },
         error: () => this.errorMessage.set('Could not load cards from the backend.')
       });
   }
@@ -139,14 +148,67 @@ export class CardAdminPage implements OnInit {
     }));
   }
 
+  protected handleImageFileChange(event: Event): void {
+    const file = (event.target as HTMLInputElement)?.files?.[0];
+    if (!file) {
+      this.imagePreview.set(null);
+      this.imageBase64.set(null);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string | ArrayBuffer | null;
+      if (typeof result === 'string') {
+        this.imagePreview.set(result);
+        const base64 = result.startsWith('data:') ? result.split(',')[1] : result;
+        this.imageBase64.set(base64);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
   private toRequest(): CardRequest {
     const value = this.cardForm.getRawValue();
     return {
       name: value.name.trim(),
+      imageBase64: this.imageBase64(),
       elixirCost: Number(value.elixirCost),
       type: value.type as CardType,
       roles: value.roles
     };
+  }
+
+  private getCardFormValidationMessage(): string {
+    const nameControl = this.cardForm.controls.name;
+    if (nameControl.invalid) {
+      if (nameControl.errors?.['required']) {
+        return 'Card name is required.';
+      }
+      if (nameControl.errors?.['maxlength']) {
+        return 'Card name cannot exceed 80 characters.';
+      }
+    }
+
+    const elixirControl = this.cardForm.controls.elixirCost;
+    if (elixirControl.invalid) {
+      if (elixirControl.errors?.['required']) {
+        return 'Elixir cost is required.';
+      }
+      if (elixirControl.errors?.['min']) {
+        return 'Elixir cost must be at least 0.5.';
+      }
+      if (elixirControl.errors?.['max']) {
+        return 'Elixir cost cannot exceed 10.';
+      }
+    }
+
+    const typeControl = this.cardForm.controls.type;
+    if (typeControl.invalid && typeControl.errors?.['required']) {
+      return 'Card type is required.';
+    }
+
+    return 'Please fix the highlighted form errors before saving.';
   }
 
   private upsertLocalCard(card: CardResponse): void {

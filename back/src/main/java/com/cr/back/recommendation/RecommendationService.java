@@ -1,17 +1,19 @@
 package com.cr.back.recommendation;
 
 import com.cr.back.card.CardImageSupport;
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.CardEntity;
-import com.cr.back.domain.MatchEntity;
-import com.cr.back.domain.MatchEventEntity;
-import com.cr.back.domain.PlayerCardEntity;
-import com.cr.back.domain.PlayerEntity;
+import com.cr.back.domain.deck.Archetype;
+import com.cr.back.domain.card.CardEntity;
+import com.cr.back.domain.match.MatchEntity;
+import com.cr.back.domain.match.MatchEventEntity;
+import com.cr.back.domain.player.PlayerCardEntity;
+import com.cr.back.domain.player.PlayerEntity;
 import com.cr.back.repository.CardRepository;
 import com.cr.back.repository.MatchEventRepository;
 import com.cr.back.repository.MatchRepository;
 import com.cr.back.repository.PlayerCardRepository;
 import com.cr.back.repository.PlayerRepository;
+import com.cr.back.recommendation.dto.DeckRecommendationResponse;
+import com.cr.back.recommendation.dto.RecommendedCardResponse;
 import com.cr.back.rules.facts.ArchetypeScore;
 import com.cr.back.rules.facts.CardFact;
 import com.cr.back.rules.facts.DeckCandidate;
@@ -119,9 +121,9 @@ public class RecommendationService {
                     best.getScore(),
                     best.averageElixir(),
                     best.getCards().stream()
-                            .map(card -> new DeckRecommendationResponse.RecommendedCardResponse(
+                            .map(card -> new RecommendedCardResponse(
                                     card.name(),
-                                    card.imageAssetId(),
+                                    card.level(),
                                     CardImageSupport.loadBase64Image(card.imageAssetId())
                             ))
                             .toList(),
@@ -139,10 +141,7 @@ public class RecommendationService {
         return new PlayerFact(
                 player.getId(),
                 player.getUsername(),
-                player.isPrefersFastGame(),
-                player.isLikesHeavyDecks(),
-                player.isAggressivePressure(),
-                player.isPatientGame(),
+                player.getPlaystyle(),
                 player.getMaxPreferredAverageElixir(),
                 player.getPreferredArchetype(),
                 Set.copyOf(player.getDislikedCards())
@@ -157,8 +156,7 @@ public class RecommendationService {
                 card.getType(),
                 Set.copyOf(card.getRoles()),
                 ownedCard != null && ownedCard.isUnlocked(),
-                ownedCard == null ? 0 : ownedCard.getLevel(),
-                ownedCard != null && ownedCard.isReliablyUsed()
+                ownedCard == null ? 0 : ownedCard.getLevel()
         );
     }
 

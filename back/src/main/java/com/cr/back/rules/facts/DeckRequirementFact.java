@@ -1,7 +1,7 @@
 package com.cr.back.rules.facts;
 
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.CardRole;
+import com.cr.back.domain.deck.Archetype;
+import com.cr.back.domain.card.CardRole;
 
 public record DeckRequirementFact(
         Archetype archetype,

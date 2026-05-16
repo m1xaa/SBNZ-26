@@ -1,7 +1,7 @@
 package com.cr.back.rules.facts;
 
-import com.cr.back.domain.CardRole;
-import com.cr.back.domain.CardType;
+import com.cr.back.domain.card.CardRole;
+import com.cr.back.domain.card.CardType;
 
 import java.util.Set;
 
@@ -12,8 +12,7 @@ public record CardFact(
         CardType type,
         Set<CardRole> roles,
         boolean unlocked,
-        int level,
-        boolean reliablyUsed
+        int level
 ) {
     public boolean hasRole(CardRole role) {
         return roles.contains(role);

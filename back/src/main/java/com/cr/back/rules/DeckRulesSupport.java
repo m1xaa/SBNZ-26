@@ -1,7 +1,7 @@
 package com.cr.back.rules;
 
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.CardRole;
+import com.cr.back.domain.card.CardRole;
+import com.cr.back.domain.deck.Archetype;
 import com.cr.back.rules.facts.CardFact;
 import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.DeckRequirementFact;
@@ -71,7 +71,7 @@ public final class DeckRulesSupport {
                 .filter(selected -> selected.archetype() == requirement.archetype())
                 .map(SelectedCardFact::card)
                 .forEach(selectedForArchetype::addCard);
-        return best(cards, requirement.role(), requirement.maxElixir(), selectedForArchetype)
+        return best(cards, requirement.archetype(), requirement.role(), requirement.maxElixir(), selectedForArchetype)
                 .orElse(null);
     }
 
@@ -87,7 +87,7 @@ public final class DeckRulesSupport {
 
     public static void addExtraAntiAir(DeckCandidate candidate, Collection<CardFact> cards) {
         while (candidate.countRole(CardRole.ANTI_AIR) < 2) {
-            Optional<CardFact> antiAir = best(cards, CardRole.ANTI_AIR, 5.0, candidate);
+            Optional<CardFact> antiAir = best(cards, candidate.getArchetype(), CardRole.ANTI_AIR, 5.0, candidate);
             if (antiAir.isEmpty()) {
                 return;
             }
@@ -103,7 +103,7 @@ public final class DeckRulesSupport {
                 .toList();
         for (CardFact card : disliked) {
             Optional<CardFact> replacement = card.roles().stream()
-                    .map(role -> best(cards, role, 6.0, candidate))
+                    .map(role -> best(cards, candidate.getArchetype(), role, 6.0, candidate))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .findFirst();
@@ -119,7 +119,7 @@ public final class DeckRulesSupport {
         candidate.getCards().stream()
                 .filter(card -> card.level() < 10)
                 .forEach(card -> card.roles().stream()
-                        .map(role -> best(cards, role, 10.0, candidate))
+                        .map(role -> best(cards, candidate.getArchetype(), role, 10.0, candidate))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         .findFirst()
@@ -131,7 +131,7 @@ public final class DeckRulesSupport {
     }
 
     private static void addBest(DeckCandidate candidate, Collection<CardFact> cards, CardRole role, double maxElixir) {
-        best(cards, role, maxElixir, candidate).ifPresent(candidate::addCard);
+        best(cards, candidate.getArchetype(), role, maxElixir, candidate).ifPresent(candidate::addCard);
     }
 
     private static void addBestNamedOrRole(DeckCandidate candidate, Collection<CardFact> cards, String name, CardRole role) {
@@ -144,7 +144,7 @@ public final class DeckRulesSupport {
 
     private static void fill(DeckCandidate candidate, Collection<CardFact> cards, CardRole role) {
         while (candidate.getCards().size() < 8) {
-            Optional<CardFact> card = best(cards, role, 9.0, candidate);
+            Optional<CardFact> card = best(cards, candidate.getArchetype(), role, 9.0, candidate);
             if (card.isEmpty()) {
                 return;
             }
@@ -152,14 +152,75 @@ public final class DeckRulesSupport {
         }
     }
 
-    private static Optional<CardFact> best(Collection<CardFact> cards, CardRole role, double maxElixir, DeckCandidate candidate) {
+    private static Optional<CardFact> best(
+            Collection<CardFact> cards,
+            Archetype archetype,
+            CardRole role,
+            double maxElixir,
+            DeckCandidate candidate
+    ) {
         return cards.stream()
                 .filter(CardFact::unlocked)
                 .filter(card -> card.hasRole(role))
                 .filter(card -> card.elixirCost() <= maxElixir)
                 .filter(card -> !candidate.contains(card.name()))
-                .max(Comparator.comparingInt(CardFact::level)
-                        .thenComparing(CardFact::reliablyUsed)
-                        .thenComparing(card -> -card.elixirCost()));
+                .filter(card -> isAllowedForSlot(card, archetype, role, candidate))
+                .max(candidateComparator(archetype, role));
+    }
+
+    private static boolean isAllowedForSlot(CardFact card, Archetype archetype, CardRole requestedRole, DeckCandidate candidate) {
+        if (requestedRole != CardRole.WIN_CONDITION && candidate.countRole(CardRole.WIN_CONDITION) >= 1 && card.hasRole(CardRole.WIN_CONDITION)) {
+            return false;
+        }
+
+        if (requestedRole == CardRole.WIN_CONDITION && archetype == Archetype.CYCLE) {
+            return card.hasRole(CardRole.PRESSURE) || card.hasRole(CardRole.CYCLE);
+        }
+
+        if ((requestedRole == CardRole.CYCLE || requestedRole == CardRole.SUPPORT) && archetype == Archetype.CYCLE) {
+            return !card.hasRole(CardRole.TANK);
+        }
+
+        return true;
+    }
+
+    private static Comparator<CardFact> candidateComparator(Archetype archetype, CardRole requestedRole) {
+        return Comparator
+                .comparingInt((CardFact card) -> archetypeFitScore(card, archetype, requestedRole))
+                .thenComparingInt(CardFact::level)
+                .thenComparing(card -> -card.elixirCost());
+    }
+
+    private static int archetypeFitScore(CardFact card, Archetype archetype, CardRole requestedRole) {
+        int score = 0;
+
+        if (requestedRole == CardRole.WIN_CONDITION) {
+            score += 40;
+        }
+
+        if (archetype == Archetype.CYCLE) {
+            if (card.hasRole(CardRole.CYCLE)) {
+                score += 20;
+            }
+            if (card.hasRole(CardRole.PRESSURE)) {
+                score += 15;
+            }
+            if (card.hasRole(CardRole.TANK)) {
+                score -= 25;
+            }
+            if (card.elixirCost() <= 4.0) {
+                score += 10;
+            }
+        }
+
+        if (archetype == Archetype.BEATDOWN && card.hasRole(CardRole.TANK)) {
+            score += 20;
+        }
+
+        if (requestedRole == CardRole.CYCLE && card.elixirCost() <= 2.0) {
+            score += 8;
+        }
+
+        return score;
     }
 }

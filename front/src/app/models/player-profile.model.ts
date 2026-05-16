@@ -1,3 +1,5 @@
+import { CardRole, CardType } from './card.model';
+
 export type Archetype =
   | 'CYCLE'
   | 'CONTROL'
@@ -7,13 +9,16 @@ export type Archetype =
   | 'SIEGE'
   | 'AIR_COUNTER';
 
+export type PlayerPlaystyle =
+  | 'FAST_CYCLE'
+  | 'TACTICAL_CONTROL'
+  | 'AGGRESSIVE_BRIDGE_SPAM'
+  | 'PATIENT_BEATDOWN'
+  | 'BALANCED';
+
 export interface PlayerProfileRequest {
   username: string;
-  preferredPlaystyleId: number | null;
-  prefersFastGame: boolean;
-  likesHeavyDecks: boolean;
-  aggressivePressure: boolean;
-  patientGame: boolean;
+  playstyle: PlayerPlaystyle;
   maxPreferredAverageElixir: number;
   preferredArchetype: Archetype | null;
   dislikedCards: string[];
@@ -22,38 +27,86 @@ export interface PlayerProfileRequest {
 export interface PlayerResponse {
   id: number;
   username: string;
-  prefersFastGame: boolean;
-  likesHeavyDecks: boolean;
-  aggressivePressure: boolean;
-  patientGame: boolean;
+  playstyle: PlayerPlaystyle;
   maxPreferredAverageElixir: number;
-  preferredPlaystyle: PlayerPlaystyleResponse | null;
   preferredArchetype: Archetype | null;
   dislikedCards: string[];
 }
 
-export interface PlayerPlaystyleResponse {
-  id: number;
-  code: string;
-  name: string;
+export interface PlaystyleOption {
+  playstyle: PlayerPlaystyle;
+  displayName: string;
   description: string;
+  defaultMaxPreferredAverageElixir: number;
 }
 
-export interface PlaystyleOption {
+export interface StaticOptionsResponse {
+  archetypes: Archetype[];
+  cardRoles: CardRole[];
+  cardTypes: CardType[];
+  matchOutcomes: MatchOutcome[];
+  matchEventTypes: MatchEventType[];
+  synergyTypes: string[];
+  playerPlaystyles: PlayerPlaystyle[];
+}
+
+export interface ArchetypeDefinitionRequest {
+  archetype: Archetype;
+  description: string;
+  minAverageElixir: number;
+  maxAverageElixir: number;
+  requiredRoles: CardRole[];
+}
+
+export interface ArchetypeDefinitionResponse {
+  id: number;
+  archetype: Archetype;
+  description: string;
+  minAverageElixir: number;
+  maxAverageElixir: number;
+  requiredRoles: CardRole[];
+}
+
+export interface ValidationRuleRequest {
+  code: string;
+  description: string;
+  archetype: Archetype;
+  active: boolean;
+}
+
+export interface ValidationRuleResponse {
   id: number;
   code: string;
-  name: string;
   description: string;
-  prefersFastGame: boolean;
-  likesHeavyDecks: boolean;
-  aggressivePressure: boolean;
-  patientGame: boolean;
-  defaultMaxPreferredAverageElixir: number;
+  archetype: Archetype;
+  active: boolean;
+}
+
+export type SynergyType = 'COUNTER_SYNERGY' | 'SYNERGY';
+
+export interface SynergyRequest {
+  cardAId: number;
+  cardBId: number;
+  type: SynergyType;
+  weight: number;
+  explanation: string;
+}
+
+export interface SynergyResponse {
+  id: number;
+  cardAId: number;
+  cardAName: string;
+  cardBId: number;
+  cardBName: string;
+  type: SynergyType;
+  weight: number;
+  explanation: string;
 }
 
 export interface CardOption {
   id: number;
   name: string;
+  imageAssetId: number | null;
   image: string | null;
 }
 
@@ -70,7 +123,6 @@ export interface PlayerCardRequest {
   cardId: number;
   unlocked: boolean;
   level: number;
-  reliablyUsed: boolean;
 }
 
 export interface PlayerCardResponse {
@@ -78,7 +130,6 @@ export interface PlayerCardResponse {
   cardName: string;
   unlocked: boolean;
   level: number;
-  reliablyUsed: boolean;
 }
 
 export type MatchOutcome = 'WIN' | 'LOSS';
@@ -87,8 +138,7 @@ export type MatchEventType =
   | 'LARGE_ELIXIR_COMMIT'
   | 'TOWER_LOST'
   | 'CONTROL_LOST'
-  | 'USED_CHEAP_DECK'
-  | 'USED_HEAVY_DECK';
+  | 'HUGE_DAMAGE_TAKEN';
 
 export interface MatchEventRequest {
   type: MatchEventType;
@@ -107,7 +157,7 @@ export interface MatchRequest {
   opponentArchetype: Archetype;
   deckAverageElixir: number;
   durationSeconds: number;
-  playedAt?: string | null;
+  playedAt: string | null;
   events: MatchEventRequest[];
 }
 
@@ -164,8 +214,8 @@ export interface DeckRecommendationRequest {
 
 export interface RecommendedCard {
   name: string;
-  imageAssetId?: number | null;
-  image?: string | null;
+  level: number;
+  image: string | null;
 }
 
 export interface DeckRecommendationResponse {
@@ -174,9 +224,9 @@ export interface DeckRecommendationResponse {
   archetype: Archetype;
   score: number;
   averageElixir: number;
-  cards?: RecommendedCard[];
-  insights?: string[];
-  reasons?: string[];
-  warnings?: string[];
-  alternatives?: Record<string, string>;
+  cards: RecommendedCard[];
+  insights: string[];
+  reasons: string[];
+  warnings: string[];
+  alternatives: Record<string, string>;
 }

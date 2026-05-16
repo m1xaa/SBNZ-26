@@ -5,16 +5,6 @@
       <h1 id="card-admin-title">Card management</h1>
       <p class="intro">Create and update cards using the backend /api/cards admin endpoints.</p>
     </div>
-    <div class="status-panel">
-      <span class="status-label">{{ isEditing ? 'Edit card' : 'New card' }}</span>
-      @if (selectedCard()) {
-        <strong>{{ selectedCard()?.name }}</strong>
-        <span>ID {{ selectedCard()?.id }}</span>
-      } @else {
-        <strong>Create a new card</strong>
-        <span>POST /api/cards</span>
-      }
-    </div>
   </section>
 
   @if (loading()) {
@@ -76,12 +66,36 @@
           <label>
             Card name
             <input type="text" formControlName="name" placeholder="Enter card name" />
+            @if (cardForm.controls.name.touched && cardForm.controls.name.invalid) {
+              <p class="field-error">
+                @if (cardForm.controls.name.hasError('required')) { Card name is required. }
+                @if (cardForm.controls.name.hasError('maxlength')) { Card name cannot exceed 80 characters. }
+              </p>
+            }
           </label>
 
           <label>
             Elixir cost
             <input type="number" formControlName="elixirCost" min="0.5" max="10" step="0.5" />
+            @if (cardForm.controls.elixirCost.touched && cardForm.controls.elixirCost.invalid) {
+              <p class="field-error">
+                @if (cardForm.controls.elixirCost.hasError('required')) { Elixir cost is required. }
+                @if (cardForm.controls.elixirCost.hasError('min')) { Elixir cost must be at least 0.5. }
+                @if (cardForm.controls.elixirCost.hasError('max')) { Elixir cost cannot exceed 10. }
+              </p>
+            }
           </label>
+
+          <label>
+            Card image
+            <input type="file" accept="image/*" (change)="handleImageFileChange($event)" />
+          </label>
+
+          @if (imagePreview()) {
+            <div class="image-preview">
+              <img [src]="imagePreview()" alt="Card image preview" />
+            </div>
+          }
 
           <label>
             Card type
@@ -91,6 +105,9 @@
                 <option [ngValue]="type">{{ type }}</option>
               }
             </select>
+            @if (cardForm.controls.type.touched && cardForm.controls.type.invalid) {
+              <p class="field-error">Card type is required.</p>
+            }
           </label>
 
           <label>

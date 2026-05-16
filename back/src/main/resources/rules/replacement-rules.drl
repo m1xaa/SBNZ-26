@@ -1,6 +1,6 @@
 package rules;
 
-import com.cr.back.domain.CardRole;
+import com.cr.back.domain.card.CardRole;
 import com.cr.back.rules.DeckRulesSupport;
 import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.PlayerFact;

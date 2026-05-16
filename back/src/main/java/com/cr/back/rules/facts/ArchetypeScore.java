@@ -1,6 +1,6 @@
 package com.cr.back.rules.facts;
 
-import com.cr.back.domain.Archetype;
+import com.cr.back.domain.deck.Archetype;
 
 import java.util.ArrayList;
 import java.util.HashSet;

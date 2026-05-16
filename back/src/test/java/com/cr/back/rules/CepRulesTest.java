@@ -1,8 +1,9 @@
 package com.cr.back.rules;
 
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.MatchEventType;
-import com.cr.back.domain.MatchOutcome;
+import com.cr.back.domain.deck.Archetype;
+import com.cr.back.domain.match.MatchEventType;
+import com.cr.back.domain.match.MatchOutcome;
+import com.cr.back.domain.player.PlayerPlaystyle;
 import com.cr.back.rules.facts.ArchetypeScore;
 import com.cr.back.rules.facts.MatchEventFact;
 import com.cr.back.rules.facts.MatchFact;
@@ -111,7 +112,7 @@ class CepRulesTest {
                     match(2L, MatchOutcome.WIN, Archetype.CYCLE, 3.0, 120),
                     match(3L, MatchOutcome.LOSS, Archetype.BRIDGE_SPAM, 4.1, 240),
                     event(3L, MatchEventType.LARGE_ELIXIR_COMMIT, 20, 8.0, 260),
-                    event(3L, MatchEventType.CONTROL_LOST, 45, 1.0, 285)
+                    event(3L, MatchEventType.HUGE_DAMAGE_TAKEN, 45, 700.0, 285)
             );
             replay(session, timeline);
 
@@ -329,7 +330,12 @@ class CepRulesTest {
     }
 
     private void insertPlayerAndScores(KieSession session, boolean fastGame, boolean likesHeavyDecks) {
-        session.insert(new PlayerFact(1L, "tester", fastGame, likesHeavyDecks, false, false, 3.6, null, Set.of()));
+        PlayerPlaystyle playstyle = likesHeavyDecks
+                ? PlayerPlaystyle.PATIENT_BEATDOWN
+                : fastGame
+                ? PlayerPlaystyle.FAST_CYCLE
+                : PlayerPlaystyle.BALANCED;
+        session.insert(new PlayerFact(1L, "tester", playstyle, 3.6, null, Set.of()));
         for (Archetype archetype : Archetype.values()) {
             session.insert(new ArchetypeScore(archetype));
         }

@@ -1,7 +1,7 @@
 package rules;
 
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.MatchOutcome;
+import com.cr.back.domain.deck.Archetype;
+import com.cr.back.domain.match.MatchOutcome;
 import com.cr.back.rules.facts.ArchetypeScore;
 import com.cr.back.rules.facts.MatchFact;
 import com.cr.back.rules.facts.PlayerFact;

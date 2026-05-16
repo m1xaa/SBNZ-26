@@ -10,6 +10,9 @@ body {
 }
 
 .app-shell {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   background: #1f4fac;
   padding: 16px 24px;
 }

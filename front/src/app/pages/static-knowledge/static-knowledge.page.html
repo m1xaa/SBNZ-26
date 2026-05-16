@@ -1,0 +1,160 @@
+<main class="static-page">
+  <section class="page-hero" aria-labelledby="static-knowledge-title">
+    <div>
+      <p class="eyebrow">Static knowledge</p>
+      <h1 id="static-knowledge-title">Manage archetypes, rules, and synergies</h1>
+      <p class="intro">Create, update, and browse the backend static knowledge data separately from player profiles and card admin.</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="secondary-button" (click)="loadStaticKnowledge()" [disabled]="loading()">
+        {{ loading() ? 'Refreshing...' : 'Refresh all' }}
+      </button>
+    </div>
+  </section>
+
+  @if (errorMessage()) {
+    <div class="alert error">{{ errorMessage() }}</div>
+  }
+  @if (successMessage()) {
+    <div class="alert success">{{ successMessage() }}</div>
+  }
+
+  <div class="static-grid">
+    <section class="static-panel">
+      <div class="section-heading">
+        <h2>Archetypes</h2>
+      </div>
+
+      <div class="scroll-list">
+        @if (archetypes().length > 0) {
+          <ul>
+            @for (item of archetypes(); track item.id) {
+              <li>
+                <strong>{{ item.archetype }}</strong>
+                <span>{{ item.description }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">No archetypes available.</div>
+        }
+      </div>
+    </section>
+
+    <section class="static-panel">
+      <div class="section-heading">
+        <h2>Validation rules</h2>
+      </div>
+
+      <div class="scroll-list">
+        @if (validationRules().length > 0) {
+          <ul>
+            @for (rule of validationRules(); track rule.id) {
+              <li>
+                <strong>{{ rule.code }}</strong>
+                <span>{{ rule.description }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">No validation rules available.</div>
+        }
+      </div>
+    </section>
+
+    <section class="static-panel synergy-panel">
+      <div class="section-heading">
+        <h2>Synergies</h2>
+        <button type="button" class="secondary-button" (click)="resetSynergyForm()">New</button>
+      </div>
+
+      <div class="scroll-list large-scroll">
+        @if (synergies().length > 0) {
+          <ul>
+            @for (item of synergies(); track item.id) {
+              <li>
+                <button type="button" class="list-action" (click)="editSynergy(item)">Edit</button>
+                <strong>{{ item.cardAName }} + {{ item.cardBName }}</strong>
+                <span>{{ item.type }} · weight {{ item.weight }}</span>
+                <small>{{ item.explanation }}</small>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">No synergies available.</div>
+        }
+      </div>
+
+      <form class="admin-form" [formGroup]="synergyForm" (ngSubmit)="saveSynergy()">
+        <label>
+          Card A
+          <select formControlName="cardAId">
+            <option [ngValue]="null">Choose card A</option>
+            @for (card of cardOptions(); track card.id) {
+              <option [ngValue]="card.id">{{ card.name }}</option>
+            }
+          </select>
+          @if (synergyForm.controls.cardAId.touched && synergyForm.controls.cardAId.invalid) {
+            <p class="field-error">Card A selection is required.</p>
+          }
+        </label>
+
+        <label>
+          Card B
+          <select formControlName="cardBId">
+            <option [ngValue]="null">Choose card B</option>
+            @for (card of cardOptions(); track card.id) {
+              <option [ngValue]="card.id">{{ card.name }}</option>
+            }
+          </select>
+          @if (synergyForm.controls.cardBId.touched && synergyForm.controls.cardBId.invalid) {
+            <p class="field-error">Card B selection is required.</p>
+          }
+        </label>
+
+        <label>
+          Synergy type
+          <select formControlName="type">
+            <option [ngValue]="null">Select type</option>
+            @for (type of synergyTypes; track type) {
+              <option [ngValue]="type">{{ type }}</option>
+            }
+          </select>
+          @if (synergyForm.controls.type.touched && synergyForm.controls.type.invalid) {
+            <p class="field-error">Synergy type is required.</p>
+          }
+        </label>
+
+        <label>
+          Weight
+          <input type="number" formControlName="weight" min="0" max="100" />
+          @if (synergyForm.controls.weight.touched && synergyForm.controls.weight.invalid) {
+            <p class="field-error">
+              @if (synergyForm.controls.weight.errors?.['required']) { Weight is required. }
+              @if (synergyForm.controls.weight.errors?.['min']) { Weight cannot be negative. }
+              @if (synergyForm.controls.weight.errors?.['max']) { Weight cannot exceed 100. }
+            </p>
+          }
+        </label>
+
+        <label>
+          Explanation
+          <textarea formControlName="explanation" rows="3" placeholder="Why these cards work together"></textarea>
+          @if (synergyForm.controls.explanation.touched && synergyForm.controls.explanation.invalid) {
+            <p class="field-error">
+              @if (synergyForm.controls.explanation.errors?.['required']) { Explanation is required. }
+              @if (synergyForm.controls.explanation.errors?.['maxlength']) { Explanation cannot exceed 240 characters. }
+            </p>
+          }
+        </label>
+
+        <div class="actions">
+          <button type="button" class="secondary-button" (click)="resetSynergyForm()">Reset</button>
+          <button type="submit" class="primary-button" [disabled]="saving()">
+            {{ isSynergyEditing ? 'Update synergy' : 'Create synergy' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>

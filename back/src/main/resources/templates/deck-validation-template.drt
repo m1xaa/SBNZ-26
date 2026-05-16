@@ -8,8 +8,8 @@ warning
 
 package generated.templates;
 
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.CardRole;
+import com.cr.back.domain.deck.Archetype;
+import com.cr.back.domain.card.CardRole;
 import com.cr.back.rules.facts.DeckCandidate;
 
 template "archetype-validation"

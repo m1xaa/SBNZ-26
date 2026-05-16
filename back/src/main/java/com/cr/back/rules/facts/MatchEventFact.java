@@ -1,6 +1,6 @@
 package com.cr.back.rules.facts;
 
-import com.cr.back.domain.MatchEventType;
+import com.cr.back.domain.match.MatchEventType;
 import org.kie.api.definition.type.Role;
 import org.kie.api.definition.type.Timestamp;
 

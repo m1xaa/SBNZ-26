@@ -1,6 +1,6 @@
 package rules;
 
-import com.cr.back.domain.CardRole;
+import com.cr.back.domain.card.CardRole;
 import com.cr.back.rules.DeckRulesSupport;
 import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.PlayerFact;
@@ -72,7 +72,7 @@ rule "24 validity - key cards need acceptable levels"
 salience 40
 when
     $d : DeckCandidate(valid == true)
-    eval(DeckRulesSupport.hasSelectedLowLevelCard($d, 9))
+    eval(DeckRulesSupport.hasSelectedLowLevelCard($d, 8))
 then
     $d.reject("Rejected because at least one key selected card is below the minimum level.");
     update($d);

@@ -1,23 +1,16 @@
 package com.cr.back.admin;
 
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.ArchetypeDefinitionEntity;
-import com.cr.back.domain.CardEntity;
-import com.cr.back.domain.CardRole;
-import com.cr.back.domain.CardSynergyEntity;
-import com.cr.back.domain.CardType;
-import com.cr.back.domain.DeckValidationRuleEntity;
-import com.cr.back.domain.MatchEventType;
-import com.cr.back.domain.MatchOutcome;
-import com.cr.back.domain.PlayerPlaystyleEntity;
-import com.cr.back.domain.SynergyType;
-import com.cr.back.repository.ArchetypeDefinitionRepository;
-import com.cr.back.repository.CardRepository;
-import com.cr.back.repository.CardSynergyRepository;
-import com.cr.back.repository.DeckValidationRuleRepository;
-import com.cr.back.repository.PlayerPlaystyleRepository;
+import com.cr.back.admin.dto.ArchetypeDefinitionRequest;
+import com.cr.back.admin.dto.StaticOptionsResponse;
+import com.cr.back.admin.dto.SynergyRequest;
+import com.cr.back.admin.dto.SynergyResponse;
+import com.cr.back.admin.dto.ValidationRuleRequest;
+import com.cr.back.admin.service.StaticKnowledgeService;
+import com.cr.back.admin.service.StaticKnowledgeService.StaticKnowledgeSnapshot;
+import com.cr.back.domain.deck.ArchetypeDefinitionEntity;
+import com.cr.back.domain.deck.DeckValidationRuleEntity;
+import com.cr.back.domain.player.PlayerPlaystyle;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,206 +20,118 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/static")
 public class StaticKnowledgeController {
-    private final ArchetypeDefinitionRepository archetypeDefinitionRepository;
-    private final DeckValidationRuleRepository validationRuleRepository;
-    private final CardSynergyRepository synergyRepository;
-    private final CardRepository cardRepository;
-    private final PlayerPlaystyleRepository playstyleRepository;
+    private final StaticKnowledgeService staticKnowledgeService;
 
-    public StaticKnowledgeController(
-            ArchetypeDefinitionRepository archetypeDefinitionRepository,
-            DeckValidationRuleRepository validationRuleRepository,
-            CardSynergyRepository synergyRepository,
-            CardRepository cardRepository,
-            PlayerPlaystyleRepository playstyleRepository
-    ) {
-        this.archetypeDefinitionRepository = archetypeDefinitionRepository;
-        this.validationRuleRepository = validationRuleRepository;
-        this.synergyRepository = synergyRepository;
-        this.cardRepository = cardRepository;
-        this.playstyleRepository = playstyleRepository;
+    public StaticKnowledgeController(StaticKnowledgeService staticKnowledgeService) {
+        this.staticKnowledgeService = staticKnowledgeService;
     }
 
     @GetMapping("/options")
-    public StaticOptions options() {
-        return new StaticOptions(
-                Arrays.asList(Archetype.values()),
-                Arrays.asList(CardRole.values()),
-                Arrays.asList(CardType.values()),
-                Arrays.asList(MatchOutcome.values()),
-                Arrays.asList(MatchEventType.values()),
-                Arrays.asList(SynergyType.values()),
-                playstyleRepository.findAll()
+    public StaticOptionsResponse options() {
+        StaticKnowledgeSnapshot snapshot = staticKnowledgeService.options();
+        return new StaticOptionsResponse(
+                snapshot.archetypes(),
+                snapshot.cardRoles(),
+                snapshot.cardTypes(),
+                snapshot.matchOutcomes(),
+                snapshot.matchEventTypes(),
+                snapshot.synergyTypes(),
+                snapshot.playerPlaystyles()
         );
     }
 
     @GetMapping("/player-playstyles")
-    public List<PlayerPlaystyleEntity> playerPlaystyles() {
-        return playstyleRepository.findAll();
+    public List<PlayerPlaystyle> playerPlaystyles() {
+        return staticKnowledgeService.playerPlaystyles();
     }
 
     @GetMapping("/archetypes")
     public List<ArchetypeDefinitionEntity> archetypes() {
-        return archetypeDefinitionRepository.findAll();
+        return staticKnowledgeService.archetypes();
     }
 
     @PostMapping("/archetypes")
     @ResponseStatus(HttpStatus.CREATED)
     public ArchetypeDefinitionEntity createArchetype(@RequestBody ArchetypeDefinitionRequest request) {
-        return archetypeDefinitionRepository.save(new ArchetypeDefinitionEntity(
-                request.archetype(),
-                request.description(),
-                request.minAverageElixir(),
-                request.maxAverageElixir(),
-                request.requiredRoles()
-        ));
-    }
-
-    @PutMapping("/archetypes/{id}")
-    public ArchetypeDefinitionEntity updateArchetype(@PathVariable Long id, @RequestBody ArchetypeDefinitionRequest request) {
-        ArchetypeDefinitionEntity entity = archetypeDefinitionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Archetype definition not found: " + id));
-        entity.update(
+        return staticKnowledgeService.createArchetype(
                 request.archetype(),
                 request.description(),
                 request.minAverageElixir(),
                 request.maxAverageElixir(),
                 request.requiredRoles()
         );
-        return archetypeDefinitionRepository.save(entity);
     }
 
-    @DeleteMapping("/archetypes/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteArchetype(@PathVariable Long id) {
-        archetypeDefinitionRepository.deleteById(id);
+    @PutMapping("/archetypes/{id}")
+    public ArchetypeDefinitionEntity updateArchetype(@PathVariable Long id, @RequestBody ArchetypeDefinitionRequest request) {
+        return staticKnowledgeService.updateArchetype(
+                id,
+                request.archetype(),
+                request.description(),
+                request.minAverageElixir(),
+                request.maxAverageElixir(),
+                request.requiredRoles()
+        );
     }
 
     @GetMapping("/validation-rules")
     public List<DeckValidationRuleEntity> validationRules() {
-        return validationRuleRepository.findAll();
+        return staticKnowledgeService.validationRules();
     }
 
     @PostMapping("/validation-rules")
     @ResponseStatus(HttpStatus.CREATED)
     public DeckValidationRuleEntity createValidationRule(@RequestBody ValidationRuleRequest request) {
-        return validationRuleRepository.save(new DeckValidationRuleEntity(
+        return staticKnowledgeService.createValidationRule(
                 request.code(),
                 request.description(),
                 request.archetype(),
                 request.active()
-        ));
+        );
     }
 
     @PutMapping("/validation-rules/{id}")
     public DeckValidationRuleEntity updateValidationRule(@PathVariable Long id, @RequestBody ValidationRuleRequest request) {
-        DeckValidationRuleEntity entity = validationRuleRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Validation rule not found: " + id));
-        entity.update(request.code(), request.description(), request.archetype(), request.active());
-        return validationRuleRepository.save(entity);
-    }
-
-    @DeleteMapping("/validation-rules/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteValidationRule(@PathVariable Long id) {
-        validationRuleRepository.deleteById(id);
+        return staticKnowledgeService.updateValidationRule(
+                id,
+                request.code(),
+                request.description(),
+                request.archetype(),
+                request.active()
+        );
     }
 
     @GetMapping("/synergies")
     public List<SynergyResponse> synergies() {
-        return synergyRepository.findAll().stream().map(SynergyResponse::from).toList();
+        return staticKnowledgeService.synergies().stream().map(SynergyResponse::from).toList();
     }
 
     @PostMapping("/synergies")
     @ResponseStatus(HttpStatus.CREATED)
     public SynergyResponse createSynergy(@RequestBody SynergyRequest request) {
-        CardEntity cardA = findCard(request.cardAId());
-        CardEntity cardB = findCard(request.cardBId());
-        return SynergyResponse.from(synergyRepository.save(new CardSynergyEntity(
-                cardA,
-                cardB,
+        return SynergyResponse.from(staticKnowledgeService.createSynergy(
+                request.cardAId(),
+                request.cardBId(),
                 request.type(),
                 request.weight(),
                 request.explanation()
-        )));
+        ));
     }
 
     @PutMapping("/synergies/{id}")
     public SynergyResponse updateSynergy(@PathVariable Long id, @RequestBody SynergyRequest request) {
-        CardSynergyEntity entity = synergyRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Synergy not found: " + id));
-        entity.update(findCard(request.cardAId()), findCard(request.cardBId()), request.type(), request.weight(), request.explanation());
-        return SynergyResponse.from(synergyRepository.save(entity));
-    }
-
-    @DeleteMapping("/synergies/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSynergy(@PathVariable Long id) {
-        synergyRepository.deleteById(id);
-    }
-
-    private CardEntity findCard(Long id) {
-        return cardRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Card not found: " + id));
-    }
-
-    public record StaticOptions(
-            List<Archetype> archetypes,
-            List<CardRole> cardRoles,
-            List<CardType> cardTypes,
-            List<MatchOutcome> matchOutcomes,
-            List<MatchEventType> matchEventTypes,
-            List<SynergyType> synergyTypes,
-            List<PlayerPlaystyleEntity> playerPlaystyles
-    ) {
-    }
-
-    public record ArchetypeDefinitionRequest(
-            Archetype archetype,
-            String description,
-            double minAverageElixir,
-            double maxAverageElixir,
-            Set<CardRole> requiredRoles
-    ) {
-        public ArchetypeDefinitionRequest {
-            requiredRoles = requiredRoles == null ? Set.of() : requiredRoles;
-        }
-    }
-
-    public record ValidationRuleRequest(String code, String description, Archetype archetype, boolean active) {
-    }
-
-    public record SynergyRequest(Long cardAId, Long cardBId, SynergyType type, int weight, String explanation) {
-    }
-
-    public record SynergyResponse(
-            Long id,
-            Long cardAId,
-            String cardAName,
-            Long cardBId,
-            String cardBName,
-            SynergyType type,
-            int weight,
-            String explanation
-    ) {
-        static SynergyResponse from(CardSynergyEntity entity) {
-            return new SynergyResponse(
-                    entity.getId(),
-                    entity.getCardA().getId(),
-                    entity.getCardA().getName(),
-                    entity.getCardB().getId(),
-                    entity.getCardB().getName(),
-                    entity.getType(),
-                    entity.getWeight(),
-                    entity.getExplanation()
-            );
-        }
+        return SynergyResponse.from(staticKnowledgeService.updateSynergy(
+                id,
+                request.cardAId(),
+                request.cardBId(),
+                request.type(),
+                request.weight(),
+                request.explanation()
+        ));
     }
 }

@@ -4,30 +4,6 @@ ALTER TABLE match_history DROP CONSTRAINT IF EXISTS match_history_opponent_arche
 ALTER TABLE players DROP CONSTRAINT IF EXISTS players_preferred_archetype_check;
 ALTER TABLE cards DROP CONSTRAINT IF EXISTS cards_type_check;
 
-INSERT INTO player_playstyles (
-    code,
-    name,
-    description,
-    prefers_fast_game,
-    likes_heavy_decks,
-    aggressive_pressure,
-    patient_game,
-    default_max_preferred_average_elixir
-) VALUES
-('FAST_PLAYSTYLE', 'Fast playstyle', 'Low-elixir cycle play with quick pressure and frequent card rotation.', true, false, true, false, 3.3),
-('TACTICAL_CONTROL', 'Tactical control', 'Patient defensive play focused on positive trades and controlled counterpressure.', false, false, false, true, 3.8),
-('AGGRESSIVE_PRESSURE', 'Aggressive pressure', 'Bridge pressure and punish-oriented play that attacks elixir gaps quickly.', true, false, true, false, 3.6),
-('PATIENT_BEATDOWN', 'Patient beatdown', 'Slower heavy-deck play that builds large pushes behind tanks.', false, true, false, true, 4.6),
-('BALANCED', 'Balanced', 'Flexible playstyle without a strong speed or deck-weight preference.', false, false, false, false, 4.0)
-ON CONFLICT (code) DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    prefers_fast_game = EXCLUDED.prefers_fast_game,
-    likes_heavy_decks = EXCLUDED.likes_heavy_decks,
-    aggressive_pressure = EXCLUDED.aggressive_pressure,
-    patient_game = EXCLUDED.patient_game,
-    default_max_preferred_average_elixir = EXCLUDED.default_max_preferred_average_elixir;
-
 INSERT INTO cards (name, elixir_cost, type) VALUES
 ('Archers', 3, 'GROUND_TROOP'),
 ('Archer Queen', 5, 'GROUND_TROOP'),

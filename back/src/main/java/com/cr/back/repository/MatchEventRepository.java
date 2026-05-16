@@ -1,6 +1,6 @@
 package com.cr.back.repository;
 
-import com.cr.back.domain.MatchEventEntity;
+import com.cr.back.domain.match.MatchEventEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;

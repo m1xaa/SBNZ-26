@@ -1,6 +1,6 @@
 package com.cr.back.repository;
 
-import com.cr.back.domain.MatchEntity;
+import com.cr.back.domain.match.MatchEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

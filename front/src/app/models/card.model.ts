@@ -18,6 +18,7 @@ export type CardRole =
 
 export interface CardRequest {
   name: string;
+  imageBase64: string | null;
   elixirCost: number;
   type: CardType;
   roles: CardRole[];
@@ -26,8 +27,9 @@ export interface CardRequest {
 export interface CardResponse {
   id: number;
   name: string;
+  imageAssetId: number | null;
+  image: string | null;
   elixirCost: number;
   type: CardType;
   roles: CardRole[];
-  image?: string | null;
 }

@@ -7,16 +7,6 @@
         Choose an existing player, update preferences, and save the profile to the backend.
       </p>
     </div>
-    <div class="status-panel">
-      <span class="status-label">{{ modeLabel() }}</span>
-      @if (savedProfile()) {
-        <strong>{{ savedProfile()?.username }}</strong>
-        <span>Saved successfully</span>
-      } @else {
-        <strong>No profile saved yet</strong>
-        <span>Use the form to create or update a player</span>
-      }
-    </div>
   </section>
 
   @if (loading()) {
@@ -59,11 +49,11 @@
           </label>
 
           <label>
-            Playstyle preset
-            <select formControlName="preferredPlaystyleId">
-              <option [ngValue]="null">Custom preferences</option>
-              @for (playstyle of playstyles(); track playstyle.id) {
-                <option [ngValue]="playstyle.id">{{ playstyle.name }}</option>
+            Playstyle
+            <select formControlName="playstyle">
+              <option [ngValue]="null" disabled>Select playstyle</option>
+              @for (playstyle of playstyles(); track playstyle.playstyle) {
+                <option [ngValue]="playstyle.playstyle">{{ playstyle.displayName }}</option>
               }
             </select>
           </label>
@@ -71,30 +61,10 @@
 
         @if (selectedPlaystyle()) {
           <div class="playstyle-summary">
-            <strong>{{ selectedPlaystyle()?.name }}</strong>
+            <strong>{{ selectedPlaystyle()?.displayName }}</strong>
             <p>{{ selectedPlaystyle()?.description }}</p>
           </div>
         }
-
-        <fieldset class="preference-grid">
-          <legend>Preference flags</legend>
-          <label>
-            <input type="checkbox" formControlName="prefersFastGame" />
-            Fast game
-          </label>
-          <label>
-            <input type="checkbox" formControlName="likesHeavyDecks" />
-            Heavy decks
-          </label>
-          <label>
-            <input type="checkbox" formControlName="aggressivePressure" />
-            Aggressive pressure
-          </label>
-          <label>
-            <input type="checkbox" formControlName="patientGame" />
-            Patient game
-          </label>
-        </fieldset>
       </section>
 
       <section class="form-section">

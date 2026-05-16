@@ -1,6 +1,6 @@
 package com.cr.back.repository;
 
-import com.cr.back.domain.CardEntity;
+import com.cr.back.domain.card.CardEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

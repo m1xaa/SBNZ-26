@@ -1,9 +1,8 @@
 package com.cr.back.admin;
 
-import com.cr.back.domain.CardEntity;
-import com.cr.back.domain.CardRole;
-import com.cr.back.domain.CardType;
-import com.cr.back.repository.CardRepository;
+import com.cr.back.admin.dto.CardRequest;
+import com.cr.back.admin.dto.CardResponse;
+import com.cr.back.admin.service.CardAdminService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,20 +15,19 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/cards")
 public class CardController {
-    private final CardRepository cardRepository;
+    private final CardAdminService cardAdminService;
 
-    public CardController(CardRepository cardRepository) {
-        this.cardRepository = cardRepository;
+    public CardController(CardAdminService cardAdminService) {
+        this.cardAdminService = cardAdminService;
     }
 
     @GetMapping
     public List<CardResponse> findAll() {
-        return cardRepository.findAll().stream()
+        return cardAdminService.findAll().stream()
                 .map(CardResponse::from)
                 .toList();
     }
@@ -37,43 +35,30 @@ public class CardController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CardResponse create(@RequestBody CardRequest request) {
-        CardEntity card = cardRepository.save(new CardEntity(
+        return CardResponse.from(cardAdminService.create(
                 request.name(),
-                request.imageAssetId(),
+                request.imageBase64(),
                 request.elixirCost(),
                 request.type(),
                 request.roles()
         ));
-        return CardResponse.from(card);
     }
 
     @PutMapping("/{id}")
     public CardResponse update(@PathVariable Long id, @RequestBody CardRequest request) {
-        CardEntity card = cardRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Card not found: " + id));
-        card.update(request.name(), request.imageAssetId(), request.elixirCost(), request.type(), request.roles());
-        return CardResponse.from(cardRepository.save(card));
+        return CardResponse.from(cardAdminService.update(
+                id,
+                request.name(),
+                request.imageBase64(),
+                request.elixirCost(),
+                request.type(),
+                request.roles()
+        ));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        cardRepository.deleteById(id);
-    }
-
-    public record CardRequest(String name, Integer imageAssetId, double elixirCost, CardType type, Set<CardRole> roles) {
-    }
-
-    public record CardResponse(Long id, String name, Integer imageAssetId, double elixirCost, CardType type, Set<CardRole> roles) {
-        static CardResponse from(CardEntity card) {
-            return new CardResponse(
-                    card.getId(),
-                    card.getName(),
-                    card.getImageAssetId(),
-                    card.getElixirCost(),
-                    card.getType(),
-                    card.getRoles()
-            );
-        }
+        cardAdminService.delete(id);
     }
 }

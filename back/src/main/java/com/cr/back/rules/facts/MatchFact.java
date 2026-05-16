@@ -1,7 +1,7 @@
 package com.cr.back.rules.facts;
 
-import com.cr.back.domain.Archetype;
-import com.cr.back.domain.MatchOutcome;
+import com.cr.back.domain.deck.Archetype;
+import com.cr.back.domain.match.MatchOutcome;
 import org.kie.api.definition.type.Role;
 import org.kie.api.definition.type.Timestamp;
 

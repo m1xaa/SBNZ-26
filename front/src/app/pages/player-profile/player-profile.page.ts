@@ -14,7 +14,8 @@ import {
   PlayerCardResponse,
   PlayerProfileRequest,
   PlayerResponse,
-  PlaystyleOption
+  PlaystyleOption,
+  PlayerPlaystyle
 } from '../../models/player-profile.model';
 import { PlayerService } from '../../services/player.service';
 import { SelectionOptionsService } from '../../services/selection-options.service';
@@ -34,8 +35,7 @@ const MATCH_EVENT_TYPES: MatchEventType[] = [
   'LARGE_ELIXIR_COMMIT',
   'TOWER_LOST',
   'CONTROL_LOST',
-  'USED_CHEAP_DECK',
-  'USED_HEAVY_DECK'
+  'HUGE_DAMAGE_TAKEN'
 ];
 
 @Component({
@@ -70,11 +70,7 @@ export class PlayerProfilePage implements OnInit {
 
   protected readonly profileForm = this.formBuilder.group({
     username: ['', [Validators.required, Validators.maxLength(80)]],
-    preferredPlaystyleId: new FormControl<number | null>(null),
-    prefersFastGame: false,
-    likesHeavyDecks: false,
-    aggressivePressure: false,
-    patientGame: false,
+    playstyle: new FormControl<PlayerPlaystyle | null>(null, { nonNullable: false, validators: [Validators.required] }),
     maxPreferredAverageElixir: [4, [Validators.required, Validators.min(1), Validators.max(9)]],
     preferredArchetype: new FormControl<Archetype | null>(null),
     dislikedCards: this.formBuilder.control<string[]>([])
@@ -86,14 +82,14 @@ export class PlayerProfilePage implements OnInit {
     deckAverageElixir: [4, [Validators.required, Validators.min(1), Validators.max(9)]],
     durationSeconds: [120, [Validators.required, Validators.min(10), Validators.max(600)]],
     playedAt: [''],
-    eventType: new FormControl<string | null>(null),
+    eventType: new FormControl<MatchEventType | null>(null),
     eventSecond: [0, [Validators.min(0), Validators.max(300)]],
     eventValue: [0, [Validators.min(0)]]
   });
 
   protected selectedPlaystyle(): PlaystyleOption | null {
-    const playstyleId = this.profileForm.controls.preferredPlaystyleId.value;
-    return this.playstyles().find((playstyle) => playstyle.id === playstyleId) ?? null;
+    const playstyle = this.profileForm.controls.playstyle.value;
+    return this.playstyles().find((item) => item.playstyle === playstyle) ?? null;
   }
 
   protected selectedCollectionCount(): number {
@@ -123,17 +119,13 @@ export class PlayerProfilePage implements OnInit {
       }
     });
 
-    this.profileForm.controls.preferredPlaystyleId.valueChanges.subscribe((playstyleId) => {
-      const playstyle = this.playstyles().find((item) => item.id === playstyleId);
+    this.profileForm.controls.playstyle.valueChanges.subscribe((selectedPlaystyle) => {
+      const playstyle = this.playstyles().find((item) => item.playstyle === selectedPlaystyle);
       if (!playstyle) {
         return;
       }
       this.profileForm.patchValue(
         {
-          prefersFastGame: playstyle.prefersFastGame,
-          likesHeavyDecks: playstyle.likesHeavyDecks,
-          aggressivePressure: playstyle.aggressivePressure,
-          patientGame: playstyle.patientGame,
           maxPreferredAverageElixir: playstyle.defaultMaxPreferredAverageElixir
         },
         { emitEvent: false }
@@ -216,11 +208,7 @@ export class PlayerProfilePage implements OnInit {
   private populateForm(player: PlayerResponse): void {
     this.profileForm.reset({
       username: player.username,
-      preferredPlaystyleId: player.preferredPlaystyle?.id ?? null,
-      prefersFastGame: player.prefersFastGame,
-      likesHeavyDecks: player.likesHeavyDecks,
-      aggressivePressure: player.aggressivePressure,
-      patientGame: player.patientGame,
+      playstyle: player.playstyle,
       maxPreferredAverageElixir: player.maxPreferredAverageElixir,
       preferredArchetype: player.preferredArchetype,
       dislikedCards: player.dislikedCards ?? []
@@ -283,7 +271,7 @@ export class PlayerProfilePage implements OnInit {
     const events = value.eventType
       ? [
           {
-            type: value.eventType as any,
+            type: value.eventType as MatchEventType,
             occurredAtSecond: Number(value.eventSecond),
             value: Number(value.eventValue)
           }
@@ -334,7 +322,7 @@ export class PlayerProfilePage implements OnInit {
         image: card.image,
         unlocked: saved?.unlocked ?? false,
         level: saved?.level ?? 1,
-        reliablyUsed: saved?.reliablyUsed ?? false
+        reliablyUsed: false
       };
     });
   }
@@ -372,8 +360,7 @@ export class PlayerProfilePage implements OnInit {
     return this.collection().map((card) => ({
       cardId: card.cardId,
       unlocked: card.unlocked,
-      level: card.level,
-      reliablyUsed: card.reliablyUsed
+      level: card.level
     }));
   }
 
@@ -409,11 +396,7 @@ export class PlayerProfilePage implements OnInit {
   protected resetForm(): void {
     this.profileForm.reset({
       username: '',
-      preferredPlaystyleId: null,
-      prefersFastGame: false,
-      likesHeavyDecks: false,
-      aggressivePressure: false,
-      patientGame: false,
+      playstyle: null,
       maxPreferredAverageElixir: 4,
       preferredArchetype: null,
       dislikedCards: []
@@ -424,11 +407,7 @@ export class PlayerProfilePage implements OnInit {
     const value = this.profileForm.getRawValue();
     return {
       username: value.username.trim(),
-      preferredPlaystyleId: value.preferredPlaystyleId,
-      prefersFastGame: value.prefersFastGame,
-      likesHeavyDecks: value.likesHeavyDecks,
-      aggressivePressure: value.aggressivePressure,
-      patientGame: value.patientGame,
+      playstyle: value.playstyle as PlayerPlaystyle,
       maxPreferredAverageElixir: Number(value.maxPreferredAverageElixir),
       preferredArchetype: value.preferredArchetype,
       dislikedCards: value.dislikedCards
