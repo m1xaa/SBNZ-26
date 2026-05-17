@@ -27,7 +27,8 @@ const ARCHETYPES: Archetype[] = [
   'BAIT',
   'BRIDGE_SPAM',
   'SIEGE',
-  'AIR_COUNTER'
+  'AIR_COUNTER',
+  'AIR_PRESSURE'
 ];
 
 const MATCH_OUTCOMES: MatchOutcome[] = ['WIN', 'LOSS'];

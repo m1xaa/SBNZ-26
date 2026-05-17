@@ -36,12 +36,12 @@ class CepRulesTest {
         try {
             insertPlayerAndScores(session, true, false);
             replay(session, List.of(
-                    match(1L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.1, 0),
-                    match(2L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.2, 60),
-                    match(3L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.3, 120),
-                    match(4L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.2, 180),
-                    match(5L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.4, 240),
-                    match(6L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.1, 300),
+                match(1L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.1, 0),
+                match(2L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.2, 60),
+                match(3L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.3, 120),
+                match(4L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.2, 180),
+                match(5L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.4, 240),
+                match(6L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.1, 300),
                     match(7L, MatchOutcome.WIN, Archetype.CYCLE, 3.1, 360),
                     match(8L, MatchOutcome.WIN, Archetype.CONTROL, 3.0, 420)
             ));
@@ -58,11 +58,11 @@ class CepRulesTest {
         try {
             insertPlayerAndScores(session, true, false);
             replay(session, List.of(
-                    match(1L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.1, 0),
-                    match(2L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.2, 60),
-                    match(3L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.3, 120),
-                    match(4L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.2, 180),
-                    match(5L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.4, 240),
+                match(1L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.1, 0),
+                match(2L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.2, 60),
+                match(3L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.3, 120),
+                match(4L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.2, 180),
+                match(5L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.4, 240),
                     match(6L, MatchOutcome.WIN, Archetype.CYCLE, 3.1, 300),
                     match(7L, MatchOutcome.WIN, Archetype.CONTROL, 3.0, 360),
                     match(8L, MatchOutcome.LOSS, Archetype.BEATDOWN, 4.1, 420),
@@ -82,15 +82,15 @@ class CepRulesTest {
         try {
             insertPlayerAndScores(session, true, false);
             replay(session, List.of(
-                    match(1L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.1, 0),
+                match(1L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.1, 0),
                     match(2L, MatchOutcome.WIN, Archetype.CYCLE, 3.1, 60),
-                    match(3L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.3, 120),
+                match(3L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.3, 120),
                     match(4L, MatchOutcome.WIN, Archetype.CONTROL, 3.0, 180),
-                    match(5L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.4, 240),
+                match(5L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.4, 240),
                     match(6L, MatchOutcome.WIN, Archetype.BEATDOWN, 4.2, 300),
-                    match(7L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.1, 360),
+                match(7L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.1, 360),
                     match(8L, MatchOutcome.WIN, Archetype.BAIT, 3.2, 420),
-                    match(9L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.2, 480),
+                match(9L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.2, 480),
                     match(10L, MatchOutcome.WIN, Archetype.SIEGE, 3.3, 540),
                     match(11L, MatchOutcome.WIN, Archetype.CONTROL, 3.1, 600)
             ));
@@ -216,7 +216,7 @@ class CepRulesTest {
                     match(1L, MatchOutcome.WIN, Archetype.BEATDOWN, 3.1, 0),
                     match(2L, MatchOutcome.WIN, Archetype.CONTROL, 3.2, 60),
                     match(3L, MatchOutcome.WIN, Archetype.BRIDGE_SPAM, 3.3, 120),
-                    match(4L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.1, 180),
+                match(4L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.1, 180),
                     match(5L, MatchOutcome.WIN, Archetype.CYCLE, 3.4, 240),
                     match(6L, MatchOutcome.LOSS, Archetype.BEATDOWN, 4.1, 300)
             ));
@@ -263,7 +263,7 @@ class CepRulesTest {
                     match(3L, MatchOutcome.WIN, Archetype.BRIDGE_SPAM, 3.7, 120),
                     match(4L, MatchOutcome.WIN, Archetype.CYCLE, 3.8, 180),
                     match(5L, MatchOutcome.WIN, Archetype.BAIT, 4.0, 240),
-                    match(6L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 3.1, 300)
+                match(6L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 3.1, 300)
             ));
 
             assertNoInsight(session, "CYCLE_STYLE");
@@ -297,7 +297,7 @@ class CepRulesTest {
         try {
             insertPlayerAndScores(session, false, true);
             replay(session, List.of(
-                    match(1L, MatchOutcome.LOSS, Archetype.AIR_COUNTER, 4.1, 0),
+                match(1L, MatchOutcome.LOSS, Archetype.AIR_PRESSURE, 4.1, 0),
                     match(2L, MatchOutcome.LOSS, Archetype.CYCLE, 4.2, 60),
                     match(3L, MatchOutcome.WIN, Archetype.CONTROL, 3.3, 120)
             ));

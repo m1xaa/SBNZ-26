@@ -7,7 +7,8 @@ export type Archetype =
   | 'BAIT'
   | 'BRIDGE_SPAM'
   | 'SIEGE'
-  | 'AIR_COUNTER';
+  | 'AIR_COUNTER'
+  | 'AIR_PRESSURE';
 
 export type PlayerPlaystyle =
   | 'FAST_CYCLE'

@@ -6,5 +6,6 @@ public enum Archetype {
     BAIT,
     BRIDGE_SPAM,
     SIEGE,
+    AIR_PRESSURE,
     AIR_COUNTER
 }

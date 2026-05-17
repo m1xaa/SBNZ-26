@@ -13,7 +13,7 @@ salience 100
 when
     not PlayerInsight(code == "AIR_WEAKNESS")
     Number(intValue >= 6) from accumulate(
-        MatchFact(outcome == MatchOutcome.LOSS, opponentArchetype == Archetype.AIR_COUNTER) over window:length(10),
+        MatchFact(outcome == MatchOutcome.LOSS, opponentArchetype == Archetype.AIR_PRESSURE) over window:length(10),
         count(1)
     )
 then
