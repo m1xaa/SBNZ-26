@@ -12,7 +12,7 @@ import com.cr.back.rules.facts.SelectedCardFact;
 
 global java.util.Collection cards;
 
-rule "12 requirement - cycle deck structure"
+rule "18 requirement - cycle deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.CYCLE, score > 0)
@@ -24,7 +24,7 @@ then
     insert(new DeckRequirementFact(Archetype.CYCLE, CardRole.CYCLE, 2, 2.5, "CYCLE_CHEAP_CARDS", "Cycle requires cheap support cards."));
 end
 
-rule "13 requirement - control deck structure"
+rule "19 requirement - control deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.CONTROL, score > 0)
@@ -36,7 +36,7 @@ then
     insert(new DeckRequirementFact(Archetype.CONTROL, CardRole.SINGLE_TARGET_DPS, 1, 5.0, "CONTROL_DPS", "Control requires single-target defense."));
 end
 
-rule "14 requirement - beatdown deck structure"
+rule "20 requirement - beatdown deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.BEATDOWN, score > 0)
@@ -47,7 +47,7 @@ then
     insert(new DeckRequirementFact(Archetype.BEATDOWN, CardRole.BIG_SPELL, 1, 6.0, "BEATDOWN_BIG_SPELL", "Beatdown requires spell support for defensive troops."));
 end
 
-rule "15 requirement - bait deck structure"
+rule "21 requirement - bait deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.BAIT, score > 0)
@@ -59,7 +59,7 @@ then
     insert(new DeckRequirementFact(Archetype.BAIT, CardRole.PRESSURE, 1, 5.0, "BAIT_PRESSURE", "Bait requires pressure cards that pull out spells."));
 end
 
-rule "16 requirement - bridge spam deck structure"
+rule "22 requirement - bridge spam deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.BRIDGE_SPAM, score > 0)
@@ -70,7 +70,7 @@ then
     insert(new DeckRequirementFact(Archetype.BRIDGE_SPAM, CardRole.SINGLE_TARGET_DPS, 1, 6.0, "BRIDGE_SPAM_DPS", "Bridge spam requires a tank killer."));
 end
 
-rule "17 requirement - siege deck structure"
+rule "23 requirement - siege deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.SIEGE, score > 0)
@@ -81,7 +81,7 @@ then
     insert(new DeckRequirementFact(Archetype.SIEGE, CardRole.ANTI_AIR, 1, 5.0, "SIEGE_ANTI_AIR", "Siege requires anti-air support."));
 end
 
-rule "18 requirement - air counter deck structure"
+rule "24 requirement - air counter deck structure"
 salience 70
 when
     ArchetypeScore(archetype == Archetype.AIR_COUNTER, score > 0)
@@ -93,7 +93,7 @@ then
     insert(new DeckRequirementFact(Archetype.AIR_COUNTER, CardRole.SMALL_SPELL, 1, 3.0, "AIR_COUNTER_SMALL_SPELL", "Air counter requires a small spell."));
 end
 
-rule "19 requirement - air weakness coverage"
+rule "25 requirement - air weakness coverage"
 salience 70
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -104,7 +104,18 @@ then
     insert(new DeckRequirementFact($a, CardRole.AIR_SUPPORT_COUNTER, 1, 6.0, "AIR_WEAKNESS_SUPPORT_COUNTER", "Air weakness requires an answer to air support."));
 end
 
-rule "20 selection - select cards from inferred requirements"
+rule "26 requirement - overcommit needs defensive stability"
+salience 70
+when
+    PlayerInsight(code == "OVERCOMMIT")
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    not DeckRequirementFact(archetype == $a, code == "OVERCOMMIT_STABILITY")
+then
+    insert(new DeckRequirementFact($a, CardRole.SINGLE_TARGET_DPS, 1, 5.0, "OVERCOMMIT_STABILITY", "Overcommit patterns require stable single-target defense."));
+    insert(new DeckRequirementFact($a, CardRole.BUILDING, 1, 5.0, "OVERCOMMIT_BUILDING", "Overcommit patterns favor a defensive building to recover tempo."));
+end
+
+rule "27 requirement - select cards from inferred requirements"
 salience 65
 when
     $r : DeckRequirementFact($a : archetype, $role : role, $min : minimumCount)

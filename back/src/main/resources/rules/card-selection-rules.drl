@@ -10,7 +10,7 @@ import com.cr.back.rules.facts.DeckRequirementFact;
 import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
 
-rule "20a priority - base required role score"
+rule "28 priority - base required role score"
 salience 68
 when
     $s : ArchetypeScore(score > 0, $a : archetype)
@@ -22,7 +22,7 @@ then
     insert(new CardPriorityFact($a, $role, $card.name(), $card.level() * 10, "BASE_ROLE"));
 end
 
-rule "20b priority - preferred archetype likes named core"
+rule "29 priority - preferred archetype likes named core"
 salience 68
 when
     $player : PlayerFact(preferredArchetype != null, $preferred : preferredArchetype)
@@ -34,7 +34,7 @@ then
     insert(new CardPriorityFact($preferred, $role, $card.name(), 8, "PLAYER_PREFERENCE"));
 end
 
-rule "20c priority - disliked cards are strongly penalized"
+rule "30 priority - disliked cards are strongly penalized"
 salience 69
 when
     $player : PlayerFact()
@@ -48,7 +48,7 @@ then
     insert(new CardPriorityFact($a, $role, $card.name(), -1000, "DISLIKED_CARD"));
 end
 
-rule "21 priority - cycle win condition prefers cheap pressure"
+rule "31 priority - cycle win condition prefers cheap pressure"
 salience 68
 when
     DeckRequirementFact(archetype == Archetype.CYCLE, role == CardRole.WIN_CONDITION, $max : maxElixir)
@@ -59,7 +59,7 @@ then
     insert(new CardPriorityFact(Archetype.CYCLE, CardRole.WIN_CONDITION, $card.name(), 35, "CYCLE_WIN_CONDITION"));
 end
 
-rule "22 priority - cycle support prefers the cheapest cards"
+rule "32 priority - cycle support prefers the cheapest cards"
 salience 68
 when
     DeckRequirementFact(archetype == Archetype.CYCLE, role == CardRole.CYCLE)
@@ -69,7 +69,7 @@ then
     insert(new CardPriorityFact(Archetype.CYCLE, CardRole.CYCLE, $card.name(), 25, "CYCLE_FILLER"));
 end
 
-rule "23 priority - control prefers flexible defense"
+rule "33 priority - control prefers flexible defense"
 salience 68
 when
     DeckRequirementFact(archetype == Archetype.CONTROL, $role : role)
@@ -84,7 +84,7 @@ then
     insert(new CardPriorityFact(Archetype.CONTROL, $role, $card.name(), 18, "CONTROL_ROLE"));
 end
 
-rule "24 priority - beatdown prioritizes tanks"
+rule "34 priority - beatdown prioritizes tanks"
 salience 68
 when
     DeckRequirementFact(archetype == Archetype.BEATDOWN, role == CardRole.TANK)
@@ -94,7 +94,7 @@ then
     insert(new CardPriorityFact(Archetype.BEATDOWN, CardRole.TANK, $card.name(), 30, "BEATDOWN_TANK"));
 end
 
-rule "25 priority - golem is signature beatdown tank"
+rule "35 priority - golem is signature beatdown tank"
 salience 68
 when
     $card : CardFact(unlocked == true, name == "Golem")
@@ -103,7 +103,7 @@ then
     insert(new CardPriorityFact(Archetype.BEATDOWN, CardRole.TANK, $card.name(), 40, "GOLEM_CORE"));
 end
 
-rule "25a priority - night witch is premium beatdown support"
+rule "36 priority - night witch is premium beatdown support"
 salience 68
 when
     $card : CardFact(unlocked == true, name == "Night Witch")
@@ -112,7 +112,7 @@ then
     insert(new CardPriorityFact(Archetype.BEATDOWN, CardRole.SUPPORT, $card.name(), 25, "GOLEM_SUPPORT"));
 end
 
-rule "26 priority - bait favors goblin barrel and princess"
+rule "37 priority - bait favors goblin barrel and princess"
 salience 68
 when
     $card : CardFact(unlocked == true, name == "Goblin Barrel" || name == "Princess")
@@ -127,7 +127,7 @@ then
     }
 end
 
-rule "27 priority - bait swarm cards"
+rule "38 priority - bait swarm cards"
 salience 68
 when
     DeckRequirementFact(archetype == Archetype.BAIT, role == CardRole.SWARM)
@@ -137,7 +137,7 @@ then
     insert(new CardPriorityFact(Archetype.BAIT, CardRole.SWARM, $card.name(), 22, "BAIT_SWARM"));
 end
 
-rule "28 priority - bridge spam pressure cards"
+rule "39 priority - bridge spam pressure cards"
 salience 68
 when
     DeckRequirementFact(archetype == Archetype.BRIDGE_SPAM, role == CardRole.PRESSURE)
@@ -147,7 +147,7 @@ then
     insert(new CardPriorityFact(Archetype.BRIDGE_SPAM, CardRole.PRESSURE, $card.name(), 25, "BRIDGE_PRESSURE"));
 end
 
-rule "29 priority - battle ram is signature bridge spam pressure"
+rule "40 priority - battle ram is signature bridge spam pressure"
 salience 68
 when
     $card : CardFact(unlocked == true, name == "Battle Ram")
@@ -156,7 +156,7 @@ then
     insert(new CardPriorityFact(Archetype.BRIDGE_SPAM, CardRole.PRESSURE, $card.name(), 35, "BATTLE_RAM_SIGNATURE"));
 end
 
-rule "30 priority - siege prefers X-Bow and Mortar"
+rule "41 priority - siege prefers X-Bow and Mortar"
 salience 68
 when
     $card : CardFact(unlocked == true, name == "X-Bow" || name == "Mortar")
@@ -165,7 +165,7 @@ then
     insert(new CardPriorityFact(Archetype.SIEGE, CardRole.SIEGE, $card.name(), 35, "SIEGE_SIGNATURE"));
 end
 
-rule "31a priority - air weakness favors anti-air in cycle/control/air-counter"
+rule "42 priority - air weakness favors anti-air in cycle/control/air-counter"
 salience 68
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -177,7 +177,7 @@ then
     insert(new CardPriorityFact($a, CardRole.ANTI_AIR, $card.name(), 24, "AIR_WEAKNESS_ANTI_AIR"));
 end
 
-rule "31b priority - firecracker musketeer baby dragon answer air losses best"
+rule "43 priority - firecracker musketeer baby dragon answer air losses best"
 salience 68
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -189,7 +189,7 @@ then
     insert(new CardPriorityFact($a, CardRole.AIR_SUPPORT_COUNTER, $card.name(), 14, "AIR_SIGNATURE"));
 end
 
-rule "31c priority - hog package is strong cycle core"
+rule "44 priority - hog package is strong cycle core"
 salience 68
 when
     $card : CardFact(
@@ -218,7 +218,29 @@ then
     }
 end
 
-rule "35 card choice - high-level win condition anchors cycle"
+rule "45 priority - overcommit favors cheap defensive buildings"
+salience 68
+when
+    PlayerInsight(code == "OVERCOMMIT")
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    $card : CardFact(unlocked == true, elixirCost <= 5.0, roles contains CardRole.BUILDING)
+    not CardPriorityFact(archetype == $a, role == CardRole.BUILDING, cardName == $card.name(), reason == "OVERCOMMIT_BUILDING")
+then
+    insert(new CardPriorityFact($a, CardRole.BUILDING, $card.name(), 20, "OVERCOMMIT_BUILDING"));
+end
+
+rule "46 priority - overcommit favors reliable tank killers"
+salience 68
+when
+    PlayerInsight(code == "OVERCOMMIT")
+    $s : ArchetypeScore(score > 0, $a : archetype)
+    $card : CardFact(unlocked == true, elixirCost <= 5.0, roles contains CardRole.SINGLE_TARGET_DPS)
+    not CardPriorityFact(archetype == $a, role == CardRole.SINGLE_TARGET_DPS, cardName == $card.name(), reason == "OVERCOMMIT_DPS")
+then
+    insert(new CardPriorityFact($a, CardRole.SINGLE_TARGET_DPS, $card.name(), 18, "OVERCOMMIT_DPS"));
+end
+
+rule "47 card choice - high-level win condition anchors cycle"
 salience 35
 when
     $d : DeckCandidate(valid == true)
@@ -230,7 +252,7 @@ then
     update($d);
 end
 
-rule "36 card choice - defensive building selected"
+rule "48 card choice - defensive building selected"
 salience 35
 when
     $d : DeckCandidate(valid == true)
@@ -242,7 +264,7 @@ then
     update($d);
 end
 
-rule "37 card choice - strong anti-air support selected"
+rule "49 card choice - strong anti-air support selected"
 salience 35
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -255,7 +277,7 @@ then
     update($d);
 end
 
-rule "38 card choice - compatible small spell selected"
+rule "50 card choice - compatible small spell selected"
 salience 35
 when
     $d : DeckCandidate(valid == true)
@@ -267,7 +289,7 @@ then
     update($d);
 end
 
-rule "39 card choice - cheap reliable support selected"
+rule "51 card choice - cheap reliable support selected"
 salience 35
 when
     $d : DeckCandidate(valid == true)
@@ -279,7 +301,7 @@ then
     update($d);
 end
 
-rule "40 card choice - synergy with win condition"
+rule "52 card choice - synergy with win condition"
 salience 35
 when
     $d : DeckCandidate(valid == true)

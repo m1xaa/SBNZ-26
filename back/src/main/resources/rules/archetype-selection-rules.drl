@@ -3,10 +3,11 @@ package rules;
 import com.cr.back.domain.card.CardRole;
 import com.cr.back.domain.deck.Archetype;
 import com.cr.back.rules.facts.ArchetypeScore;
+import com.cr.back.rules.facts.CardFact;
 import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
 
-rule "07 archetype - cycle insight favors cycle and control"
+rule "11 archetype - cycle insight favors cycle and control"
 salience 80
 when
     PlayerInsight(code == "CYCLE_STYLE")
@@ -18,7 +19,7 @@ then
     update($s);
 end
 
-rule "08 archetype - slower style with tank favors beatdown"
+rule "12 archetype - slower style with tank favors beatdown"
 salience 80
 when
     PlayerInsight(code == "SLOW_STYLE")
@@ -31,7 +32,7 @@ then
     update($s);
 end
 
-rule "09 archetype - aggressive bridge pressure favors bridge spam"
+rule "13 archetype - aggressive bridge pressure favors bridge spam"
 salience 80
 when
     $p : PlayerFact()
@@ -48,7 +49,7 @@ then
     update($s);
 end
 
-rule "10 archetype - spell bait cards favor bait"
+rule "14 archetype - spell bait cards favor bait"
 salience 80
 when
     $s : ArchetypeScore(archetype == Archetype.BAIT)
@@ -68,7 +69,7 @@ then
     update($s);
 end
 
-rule "11 archetype - air weakness favors anti-air capable decks"
+rule "15 archetype - air weakness favors anti-air capable decks"
 salience 75
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -77,5 +78,29 @@ when
 then
     $s.markRule("11");
     $s.addScore(20, "Air weakness prioritizes archetypes that can carry at least two reliable anti-air cards.");
+    update($s);
+end
+
+rule "16 archetype - overcommit favors safer cycle and control decks"
+salience 75
+when
+    PlayerInsight(code == "OVERCOMMIT")
+    $s : ArchetypeScore(archetype in (Archetype.CYCLE, Archetype.CONTROL))
+    eval(!$s.hasAppliedRule("15a"))
+then
+    $s.markRule("15a");
+    $s.addScore(18, "Repeated overcommit patterns favor safer, lower-risk cycle and control decks.");
+    update($s);
+end
+
+rule "17 archetype - overcommit reduces heavy or all-in pressure archetypes"
+salience 75
+when
+    PlayerInsight(code == "OVERCOMMIT")
+    $s : ArchetypeScore(archetype in (Archetype.BEATDOWN, Archetype.BRIDGE_SPAM))
+    eval(!$s.hasAppliedRule("15b"))
+then
+    $s.markRule("15b");
+    $s.addScore(-18, "Repeated overcommit patterns reduce priority for heavier or all-in pressure archetypes.");
     update($s);
 end

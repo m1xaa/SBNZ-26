@@ -6,7 +6,7 @@ import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
 
-rule "18 validity - exactly eight cards"
+rule "70 validity - exactly eight cards"
 salience 40
 when
     $d : DeckCandidate(valid == true)
@@ -16,7 +16,7 @@ then
     update($d);
 end
 
-rule "19 validity - exactly one main win condition"
+rule "71 validity - exactly one main win condition"
 salience 40
 when
     $d : DeckCandidate(valid == true)
@@ -26,7 +26,7 @@ then
     update($d);
 end
 
-rule "20 validity - requires small spell"
+rule "72 validity - requires small spell"
 salience 40
 when
     $d : DeckCandidate(valid == true)
@@ -36,7 +36,7 @@ then
     update($d);
 end
 
-rule "21 validity - requires tank answer or single target dps"
+rule "73 validity - requires tank answer or single target dps"
 salience 40
 when
     $d : DeckCandidate(valid == true)
@@ -46,7 +46,7 @@ then
     update($d);
 end
 
-rule "22 validity - air weakness requires two anti-air cards"
+rule "74 validity - air weakness requires two anti-air cards"
 salience 40
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -57,7 +57,7 @@ then
     update($d);
 end
 
-rule "23 validity - average elixir must match habits"
+rule "75 validity - average elixir must match habits"
 salience 40
 when
     $p : PlayerFact()
@@ -68,7 +68,7 @@ then
     update($d);
 end
 
-rule "24 validity - key cards need acceptable levels"
+rule "76 validity - key cards need acceptable levels"
 salience 40
 when
     $d : DeckCandidate(valid == true)

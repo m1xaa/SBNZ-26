@@ -19,7 +19,7 @@ then
     update($s);
 end
 
-rule "00a profile - fast preference gives cycle baseline"
+rule "01 profile - fast preference gives cycle baseline"
 salience 108
 when
     $p : PlayerFact()
@@ -32,7 +32,7 @@ then
     update($s);
 end
 
-rule "00b profile - patient or heavy preference gives beatdown/control baseline"
+rule "02 profile - patient or heavy preference gives beatdown/control baseline"
 salience 108
 when
     $p : PlayerFact()
@@ -45,7 +45,7 @@ then
     update($s);
 end
 
-rule "00c profile - aggressive pressure gives bridge spam baseline"
+rule "03 profile - aggressive pressure gives bridge spam baseline"
 salience 108
 when
     $p : PlayerFact()
@@ -58,7 +58,7 @@ then
     update($s);
 end
 
-rule "01 profile - player fits cycle style"
+rule "04 profile - player fits cycle style"
 salience 100
 when
     $p : PlayerFact()
@@ -77,7 +77,7 @@ then
     insert(new PlayerInsight("CYCLE_STYLE", "Player prefers fast games and wins often with decks below 3.5 average elixir."));
 end
 
-rule "02 profile - player fits slower control or beatdown style"
+rule "05 profile - player fits slower control or beatdown style"
 salience 100
 when
     $p : PlayerFact()
@@ -87,7 +87,7 @@ then
     insert(new PlayerInsight("SLOW_STYLE", "Player profile points to slower, more patient play."));
 end
 
-rule "03 profile - recent cheap deck wins increase cycle priority"
+rule "06 profile - recent cheap deck wins increase cycle priority"
 salience 95
 when
     $s : ArchetypeScore(archetype == Archetype.CYCLE)
@@ -102,7 +102,7 @@ then
     update($s);
 end
 
-rule "04 profile - recent heavy deck losses reduce beatdown priority"
+rule "07 profile - recent heavy deck losses reduce beatdown priority"
 salience 95
 when
     $s : ArchetypeScore(archetype == Archetype.BEATDOWN)

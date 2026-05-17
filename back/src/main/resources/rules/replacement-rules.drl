@@ -6,10 +6,11 @@ import com.cr.back.rules.facts.CardPriorityFact;
 import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.PlayerFact;
 import com.cr.back.rules.facts.PlayerInsight;
+import com.cr.back.domain.card.CardRole;
 
 global java.util.Collection cards;
 
-rule "31 replacement - suggest alternatives for low cards"
+rule "77 replacement - suggest alternatives for low cards"
 salience 25
 when
     $d : DeckCandidate($a : archetype)
@@ -24,20 +25,20 @@ then
     }
 end
 
-rule "32 correction - insufficient weakness coverage warning"
+rule "78 correction - insufficient weakness coverage warning"
 salience 25
 when
     PlayerInsight(code == "AIR_WEAKNESS")
     $d : DeckCandidate(valid == true)
     eval(!$d.hasAppliedRule("32"))
-    eval($d.countRole(com.cr.back.domain.card.CardRole.AIR_SUPPORT_COUNTER) < 1)
+    eval($d.countRole(CardRole.AIR_SUPPORT_COUNTER) < 1)
 then
     $d.markRule("32");
     $d.getWarnings().add("Deck is valid, but still has limited dedicated answers to air support.");
     update($d);
 end
 
-rule "33 tie-break - key card levels improve score"
+rule "79 tie-break - key card levels improve score"
 salience 20
 when
     $d : DeckCandidate(valid == true)
@@ -48,7 +49,7 @@ then
     update($d);
 end
 
-rule "34 replacement - respect explicitly disliked cards"
+rule "80 replacement - respect explicitly disliked cards"
 salience 30
 when
     $p : PlayerFact()

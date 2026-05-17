@@ -8,7 +8,7 @@ import com.cr.back.rules.facts.MatchFact;
 import com.cr.back.rules.facts.OvercommitSequenceFact;
 import com.cr.back.rules.facts.PlayerInsight;
 
-rule "05 profile - air weakness from recent losses"
+rule "08 cep - air weakness from recent losses"
 salience 100
 when
     not PlayerInsight(code == "AIR_WEAKNESS")
@@ -20,7 +20,7 @@ then
     insert(new PlayerInsight("AIR_WEAKNESS", "At least 6 recent losses were against air-heavy archetypes."));
 end
 
-rule "06 cep - repeated overcommit sequence in one lost match"
+rule "09 cep - repeated overcommit sequence in one lost match"
 salience 100
 when
     $match : MatchFact($matchId : id, outcome == MatchOutcome.LOSS)
@@ -35,7 +35,7 @@ then
     insert(new OvercommitSequenceFact($matchId, $eventTime, "Large elixir commit was followed by major defensive collapse in the same losing match."));
 end
 
-rule "07 cep - repeated elixir overcommit across recent losses"
+rule "10 cep - repeated elixir overcommit across recent losses"
 salience 95
 when
     not PlayerInsight(code == "OVERCOMMIT")

@@ -12,7 +12,7 @@ import com.cr.back.rules.facts.SelectedCardFact;
 
 global java.util.Collection cards;
 
-rule "12 form - create candidate from positive archetype and selected core"
+rule "53 form - create candidate from positive archetype and selected core"
 salience 60
 when
     $selected : SelectedCardFact($a : archetype)
@@ -24,7 +24,7 @@ then
     insert(deck);
 end
 
-rule "12a form - fallback candidate from positive archetype score"
+rule "54 form - fallback candidate from positive archetype score"
 salience 57
 when
     $s : ArchetypeScore(score > 0, $a : archetype)
@@ -35,7 +35,7 @@ then
     insert(deck);
 end
 
-rule "13 form - attach selected cards to candidate"
+rule "55 form - attach selected cards to candidate"
 salience 58
 when
     $selected : SelectedCardFact($a : archetype, $card : card, $reason : reason)
@@ -49,7 +49,7 @@ then
     }
 end
 
-rule "14 fill - ensure one win condition"
+rule "56 fill - ensure one win condition"
 salience 56
 when
     $d : DeckCandidate($a : archetype, valid == true)
@@ -65,7 +65,7 @@ then
     }
 end
 
-rule "15 fill - cycle/control wants a small spell"
+rule "57 fill - cycle/control wants a small spell"
 salience 56
 when
     $d : DeckCandidate($a : archetype, valid == true)
@@ -82,7 +82,7 @@ then
     }
 end
 
-rule "16 fill - cycle wants a building"
+rule "58 fill - cycle wants a building"
 salience 56
 when
     $d : DeckCandidate(archetype == Archetype.CYCLE, valid == true)
@@ -98,7 +98,7 @@ then
     }
 end
 
-rule "17 fill - add first anti-air answer"
+rule "59 fill - add first anti-air answer"
 salience 56
 when
     $d : DeckCandidate($a : archetype, valid == true)
@@ -114,7 +114,7 @@ then
     }
 end
 
-rule "17a fill - add second anti-air answer for air weakness"
+rule "60 fill - add second anti-air answer for air weakness"
 salience 56
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -131,7 +131,7 @@ then
     }
 end
 
-rule "18 fill - add air support counter when weakness exists"
+rule "61 fill - add air support counter when weakness exists"
 salience 56
 when
     PlayerInsight(code == "AIR_WEAKNESS")
@@ -148,7 +148,7 @@ then
     }
 end
 
-rule "19 fill - control and bridge spam need tank-killer coverage"
+rule "62 fill - control and bridge spam need tank-killer coverage"
 salience 56
 when
     $d : DeckCandidate($a : archetype, valid == true)
@@ -165,7 +165,7 @@ then
     }
 end
 
-rule "20 fill - beatdown needs support"
+rule "63 fill - beatdown needs support"
 salience 56
 when
     $d : DeckCandidate(archetype == Archetype.BEATDOWN, valid == true)
@@ -181,7 +181,7 @@ then
     }
 end
 
-rule "21 fill - beatdown/control wants a big spell"
+rule "64 fill - beatdown/control wants a big spell"
 salience 56
 when
     $d : DeckCandidate($a : archetype, valid == true)
@@ -198,7 +198,7 @@ then
     }
 end
 
-rule "22 fill - bait wants at least two swarm cards"
+rule "65 fill - bait wants at least two swarm cards"
 salience 56
 when
     $d : DeckCandidate(archetype == Archetype.BAIT, valid == true)
@@ -214,7 +214,7 @@ then
     }
 end
 
-rule "23 fill - bridge spam wants multiple pressure cards"
+rule "66 fill - bridge spam wants multiple pressure cards"
 salience 56
 when
     $d : DeckCandidate(archetype == Archetype.BRIDGE_SPAM, valid == true)
@@ -230,7 +230,7 @@ then
     }
 end
 
-rule "24 fill - siege wants siege card"
+rule "67 fill - siege wants siege card"
 salience 56
 when
     $d : DeckCandidate(archetype == Archetype.SIEGE, valid == true)
@@ -246,7 +246,7 @@ then
     }
 end
 
-rule "25 fill - generic support filler"
+rule "68 fill - generic support filler"
 salience 52
 when
     $d : DeckCandidate($a : archetype, valid == true)
@@ -261,7 +261,7 @@ then
     }
 end
 
-rule "26 fill - cycle filler for low-elixir decks"
+rule "69 fill - cycle filler for low-elixir decks"
 salience 51
 when
     $d : DeckCandidate($a : archetype, valid == true)

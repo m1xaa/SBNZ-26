@@ -45,17 +45,21 @@ public class DeckCandidate {
         return alternatives;
     }
 
+    public Set<String> getAppliedRules() {
+        return appliedRules;
+    }
+
     public int getScore() {
         return score;
+    }
+
+    public boolean isValid() {
+        return valid;
     }
 
     public void addScore(int value, String reason) {
         score += value;
         reasons.add(reason);
-    }
-
-    public boolean isValid() {
-        return valid;
     }
 
     public void reject(String reason) {

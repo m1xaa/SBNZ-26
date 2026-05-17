@@ -3,7 +3,7 @@ package rules;
 import com.cr.back.rules.facts.DeckCandidate;
 import com.cr.back.rules.facts.DeckRecommendationResult;
 
-rule "40 result - select strongest valid candidate"
+rule "81 result - select strongest valid candidate"
 salience 10
 when
     $result : DeckRecommendationResult()
@@ -15,7 +15,7 @@ then
     update($result);
 end
 
-rule "41 result - fallback to strongest invalid candidate"
+rule "82 result - fallback to strongest invalid candidate"
 salience 9
 when
     $result : DeckRecommendationResult(bestCandidate == null)
